@@ -875,7 +875,7 @@ onBeforeUnmount(() => {
 
 <template>
   <PageShell class="activity-management-page">
-    <MessageBlock v-if="statusMessage" tone="success">{{ statusMessage }}</MessageBlock>
+    <MessageBlock v-if="statusMessage" tone="success" module="activity">{{ statusMessage }}</MessageBlock>
     <MessageBlock v-if="errorMessage && !isDialogOpen">{{ errorMessage }}</MessageBlock>
 
     <PanelCard accent>
@@ -927,7 +927,7 @@ onBeforeUnmount(() => {
               />
             </svg>
           </IconButton>
-          <CountBadge accent>{{ totalActivitiesLabel }}</CountBadge>
+          <CountBadge tone="activity">{{ totalActivitiesLabel }}</CountBadge>
         </div>
       </div>
 

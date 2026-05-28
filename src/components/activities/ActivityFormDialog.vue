@@ -391,7 +391,7 @@ defineEmits([
 }
 
 .preorder-switch input:checked + .preorder-switch-track {
-  background: #277867;
+  background: #b84d55;
 }
 
 .preorder-switch input:checked + .preorder-switch-track .preorder-switch-thumb {
@@ -399,7 +399,7 @@ defineEmits([
 }
 
 .preorder-switch input:focus-visible + .preorder-switch-track {
-  box-shadow: 0 0 0 3px rgb(39 120 103 / 15%);
+  box-shadow: 0 0 0 3px rgb(184 77 85 / 15%);
 }
 
 .preorder-switch-text {

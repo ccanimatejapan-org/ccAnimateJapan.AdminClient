@@ -5,6 +5,7 @@ export const createProductTableColumns = ({
   getCostTwd,
   stripHtml,
   includeActions = true,
+  includeOrderedAmount = false,
 }) => {
   const columns = [
     {
@@ -27,13 +28,13 @@ export const createProductTableColumns = ({
     },
     {
       key: 'costTwd',
-      label: '成本台幣',
+      label: '台幣成本',
       sortable: true,
       getValue: (product) => getCostTwd(product),
     },
     {
       key: 'price',
-      label: '售價台幣',
+      label: '售價',
       sortable: true,
       getValue: (product) => toNumber(product.price),
     },
@@ -42,6 +43,12 @@ export const createProductTableColumns = ({
       label: '庫存數量',
       sortable: true,
       getValue: (product) => toNumber(product.amount),
+    },
+    {
+      key: 'activityKind',
+      label: '活動模式',
+      sortable: true,
+      getValue: (product) => (product.isPreOrder ? '預購' : '現貨'),
     },
     {
       key: 'stockStatus',
@@ -62,6 +69,15 @@ export const createProductTableColumns = ({
       getValue: (product) => product.updateAt || product.createdAt || '',
     },
   ]
+
+  if (includeOrderedAmount) {
+    columns.splice(6, 0, {
+      key: 'orderedAmount',
+      label: '訂購數量',
+      sortable: true,
+      getValue: (product) => toNumber(product.orderedAmount),
+    })
+  }
 
   if (includeActions) {
     columns.push({

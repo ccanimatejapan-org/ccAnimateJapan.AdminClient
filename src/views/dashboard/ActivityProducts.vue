@@ -61,6 +61,7 @@ const activityName = computed(() => selectedActivity.value?.name || `活動 #${a
 const activityKindText = computed(() =>
   selectedActivity.value ? (selectedActivity.value.isPreOrder ? '預購' : '現貨') : '',
 )
+const isSpotActivity = computed(() => selectedActivity.value?.isPreOrder === false)
 
 const isDialogOpen = ref(false)
 const editingProductId = ref(null)
@@ -92,7 +93,6 @@ const emptyForm = {
   saleRate: 0.24,
   price: 0,
   amount: 0,
-  isOutStock: false,
   productTypeId: 1,
   info: '',
 }
@@ -233,6 +233,14 @@ const validateProductForm = () => {
   if (missingFields.length) {
     errorMessage.value = formatRequiredFieldsMessage(missingFields)
     return false
+  }
+
+  if (!editingProductId.value && isSpotActivity.value) {
+    const amount = Number(form.amount)
+    if (!Number.isInteger(amount) || amount < 0) {
+      errorMessage.value = '現貨商品數量必須是大於或等於 0 的整數。'
+      return false
+    }
   }
 
   return true
@@ -407,16 +415,22 @@ const updatePriceFromSaleRate = () => {
   form.price = Math.round(toNumber(form.japanCost) * toNumber(form.saleRate))
 }
 
-const buildProductPayload = () => ({
-  name: form.name.trim(),
-  japanCost: toNumber(form.japanCost),
-  rate: toNumber(form.rate),
-  price: toNumber(form.price),
-  amount: 0,
-  isOutStock: Boolean(form.isOutStock),
-  productTypeId: toNumber(form.productTypeId),
-  info: sanitizeHtml(form.info).trim(),
-})
+const buildProductPayload = () => {
+  const payload = {
+    name: form.name.trim(),
+    japanCost: toNumber(form.japanCost),
+    rate: toNumber(form.rate),
+    price: toNumber(form.price),
+    productTypeId: toNumber(form.productTypeId),
+    info: sanitizeHtml(form.info).trim(),
+  }
+
+  if (!editingProductId.value) {
+    payload.amount = isSpotActivity.value ? Math.max(0, toNumber(form.amount)) : 0
+  }
+
+  return payload
+}
 
 const appendIfValue = (formData, key, value) => {
   if (value !== undefined && value !== null && value !== '') {
@@ -560,7 +574,11 @@ const loadProducts = async () => {
 
   try {
     const responseProducts = await listActivityProducts(activityId.value)
-    products.value = responseProducts.map((product) => mapProductFromApi(product, activityId.value))
+    products.value = responseProducts.map((product) => ({
+      ...mapProductFromApi(product, activityId.value),
+      activityName: activityName.value,
+      isPreOrder: selectedActivity.value?.isPreOrder === true,
+    }))
   } catch (err) {
     errorMessage.value = err.message || '載入商品失敗。'
   } finally {
@@ -624,8 +642,7 @@ const openEditDialog = (product) => {
     rate: product.rate,
     saleRate: getSaleRateFromProduct(product),
     price: product.price,
-    amount: 0,
-    isOutStock: product.isOutStock,
+    amount: product.amount,
     productTypeId: product.productTypeId || getDefaultProductTypeId(),
     info: product.info || '',
   })
@@ -674,7 +691,11 @@ const saveProduct = async () => {
     const response = editingProductId.value
       ? await updateActivityProduct(activityId.value, payload)
       : await createActivityProduct(activityId.value, payload)
-    const savedProduct = mapProductFromApi(response?.data, activityId.value)
+    const savedProduct = {
+      ...mapProductFromApi(response?.data, activityId.value),
+      activityName: activityName.value,
+      isPreOrder: selectedActivity.value?.isPreOrder === true,
+    }
 
     if (editingProductId.value) {
       products.value = products.value.map((product) =>
@@ -694,22 +715,21 @@ const saveProduct = async () => {
   }
 }
 
-const loadPage = () => {
-  loadActivity()
-  loadProductTypes()
-  loadProducts()
+const loadPage = async () => {
+  await loadActivity()
+  await Promise.all([loadProductTypes(), loadProducts()])
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadActivityRateDefaults()
-  loadPage()
+  await loadPage()
 })
 onBeforeUnmount(() => {
   resetProductImages()
   setDialogScrollLock(false)
 })
 
-watch(activityId, () => {
+watch(activityId, async () => {
   loadActivityRateDefaults()
   products.value = []
   statusMessage.value = ''
@@ -717,7 +737,7 @@ watch(activityId, () => {
   productTypeErrorMessage.value = ''
   clearSearchFilters()
   closeDialog()
-  loadPage()
+  await loadPage()
 })
 
 watch(
@@ -758,7 +778,7 @@ watch(isAnyDialogOpen, setDialogScrollLock, { immediate: true })
 
 <template>
   <PageShell class="activity-management-page">
-    <MessageBlock v-if="statusMessage" tone="success">{{ statusMessage }}</MessageBlock>
+    <MessageBlock v-if="statusMessage" tone="success" module="product">{{ statusMessage }}</MessageBlock>
     <MessageBlock v-if="errorMessage && !isDialogOpen">{{ errorMessage }}</MessageBlock>
 
     <div class="product-page-toolbar">
@@ -844,7 +864,7 @@ watch(isAnyDialogOpen, setDialogScrollLock, { immediate: true })
               />
             </svg>
           </IconButton>
-          <CountBadge>{{ totalProductsLabel }}</CountBadge>
+          <CountBadge tone="product">{{ totalProductsLabel }}</CountBadge>
         </div>
       </div>
 
@@ -992,6 +1012,7 @@ watch(isAnyDialogOpen, setDialogScrollLock, { immediate: true })
       :product-images="productImageItems"
       :remaining-image-slots="remainingProductImageSlots"
       :image-limit="productImageLimit"
+      :is-spot-activity="isSpotActivity"
       @close="closeDialog"
       @submit="saveProduct"
       @image-change="handleProductImageChange"
@@ -1001,6 +1022,7 @@ watch(isAnyDialogOpen, setDialogScrollLock, { immediate: true })
 
     <ActivityNoteDialog
       v-if="isNoteDialogOpen"
+      tone="product"
       :title="selectedNoteTitle"
       :html="selectedNoteHtml"
       @close="closeNoteDialog"
