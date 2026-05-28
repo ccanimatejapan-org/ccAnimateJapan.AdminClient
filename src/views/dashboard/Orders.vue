@@ -6,14 +6,14 @@ import {
   downloadOrderPdf,
   getOrderDetail,
   listDeliveryTypes,
-  listAllOrdersByActivity,
-  listOrderActivities,
-  listOrderActivityProducts,
+  listAllOrders,
+  listOrderProducts,
   sendOrderConfirmationEmail,
   updateOrder,
 } from '@/api/orders'
 import OrderDeleteConfirmDialog from '@/components/orders/OrderDeleteConfirmDialog.vue'
 import OrderFormDialog from '@/components/orders/OrderFormDialog.vue'
+import CustomSelect from '@/components/activities/CustomSelect.vue'
 import PageHeading from '@/components/layout/PageHeading.vue'
 import PageShell from '@/components/layout/PageShell.vue'
 import MessageBlock from '@/components/ui/MessageBlock.vue'
@@ -24,6 +24,7 @@ import {
   ORDER_STATUS_OPTIONS,
   PAYMENT_STATUS_OPTIONS,
   getDeliveryStatusLabel,
+  getOrderProductStatusLabel,
   getOrderStatusLabel,
   getPaymentStatusLabel,
   isValidDeliveryStatus,
@@ -51,8 +52,6 @@ const mailIconPaths = [
   'm4 7 8 6 8-6',
 ]
 
-const activities = ref([])
-const selectedActivityId = ref('')
 const deliveryTypes = ref([])
 const products = ref([])
 const orders = ref([])
@@ -67,7 +66,6 @@ const sortState = ref({
   key: 'createdAt',
   direction: 'desc',
 })
-const isLoadingActivities = ref(false)
 const isLoadingOrders = ref(false)
 const isLoadingDetail = ref(false)
 const isSavingOrder = ref(false)
@@ -77,6 +75,7 @@ const sendingConfirmationOrderId = ref(null)
 const errorMessage = ref('')
 const statusMessage = ref('')
 const formErrorMessage = ref('')
+const openSelectKey = ref('')
 
 const createEmptyOrderItem = () => ({
   productId: '',
@@ -90,8 +89,8 @@ const createEmptyOrderForm = () => ({
   subscriberPhone: '',
   deliveryTypeId: '',
   orderStatus: 1,
-  paymentStatus: 1,
-  deliveryStatus: 1,
+  paymentStatus: 5,
+  deliveryStatus: 6,
   items: [createEmptyOrderItem()],
 })
 
@@ -109,12 +108,6 @@ const hasPositiveNumberValue = (value) => {
 const formatRequiredFieldsMessage = (fields) => `請填寫：${fields.join('、')}。`
 
 const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim())
-
-const selectedActivity = computed(() =>
-  activities.value.find((activity) => Number(activity.activityId) === Number(selectedActivityId.value)) || null,
-)
-
-const getActivityKindText = (activity) => (activity?.isPreOrder ? '預購' : '現貨')
 
 const orderStatusOptions = ORDER_STATUS_FILTER_OPTIONS
 const mutationOrderStatusOptions = ORDER_STATUS_OPTIONS
@@ -142,6 +135,9 @@ const formProductOptions = computed(() => {
       optionsById.set(productId, {
         productId,
         name: item.name,
+        activityId: item.activityId,
+        activityName: item.activityName,
+        isPreOrder: item.isPreOrder,
         price: item.price,
         amount: item.amount,
       })
@@ -184,6 +180,19 @@ const totalCount = computed(() => filteredOrders.value.length)
 const hasFiltersApplied = computed(() =>
   Boolean(normalizeText(searchKeyword.value) || statusFilter.value),
 )
+
+const statusFilterLabel = computed(() =>
+  orderStatusOptions.find((option) => String(option.value) === String(statusFilter.value))?.label || '全部狀態',
+)
+
+const toggleSelect = (key) => {
+  openSelectKey.value = openSelectKey.value === key ? '' : key
+}
+
+const selectStatusFilter = (value) => {
+  statusFilter.value = value
+  openSelectKey.value = ''
+}
 
 const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / pageSize)))
 
@@ -273,25 +282,13 @@ const sendConfirmationEmail = async (orderId) => {
   try {
     const result = await sendOrderConfirmationEmail(orderId)
     const recipient = result?.recipient || '顧客 Email'
+    await loadOrders()
+    await openOrderDetail(orderId)
     statusMessage.value = `訂單 #${result?.orderId || orderId} 確認信已寄送至 ${recipient}。`
   } catch (err) {
     errorMessage.value = err?.message || '訂單確認信寄送失敗'
   } finally {
     sendingConfirmationOrderId.value = null
-  }
-}
-
-const loadActivities = async () => {
-  isLoadingActivities.value = true
-  errorMessage.value = ''
-
-  try {
-    activities.value = await listOrderActivities()
-    selectedActivityId.value = activities.value[0]?.activityId || ''
-  } catch (err) {
-    errorMessage.value = err?.message || '活動資料載入失敗'
-  } finally {
-    isLoadingActivities.value = false
   }
 }
 
@@ -304,40 +301,25 @@ const loadDeliveryTypes = async () => {
 }
 
 const loadProducts = async () => {
-  if (!selectedActivityId.value) {
-    products.value = []
-    return
-  }
-
   try {
-    products.value = await listOrderActivityProducts(selectedActivityId.value)
+    products.value = await listOrderProducts()
   } catch (_) {
     products.value = []
   }
 }
 
 const loadOrders = async () => {
-  if (!selectedActivityId.value) {
-    orders.value = []
-    selectedOrder.value = null
-    return
-  }
-
   isLoadingOrders.value = true
   errorMessage.value = ''
 
   try {
-    orders.value = await listAllOrdersByActivity(selectedActivityId.value)
+    orders.value = await listAllOrders()
     selectedOrder.value = null
   } catch (err) {
     errorMessage.value = err?.message || '訂單資料載入失敗'
   } finally {
     isLoadingOrders.value = false
   }
-}
-
-const selectActivity = (activityId) => {
-  selectedActivityId.value = activityId
 }
 
 const resetFilters = () => {
@@ -365,11 +347,6 @@ const openOrderDetail = async (orderId) => {
 }
 
 const openCreateOrder = () => {
-  if (!selectedActivityId.value) {
-    errorMessage.value = '請先選擇活動'
-    return
-  }
-
   editingOrderId.value = null
   selectedOrder.value = null
   orderForm.value = createEmptyOrderForm()
@@ -393,8 +370,8 @@ const openEditOrder = async (order) => {
       subscriberPhone: detail.subscriberPhone || '',
       deliveryTypeId: detail.deliveryType?.id || '',
       orderStatus: detail.orderStatus || 1,
-      paymentStatus: detail.paymentStatus || 1,
-      deliveryStatus: detail.deliveryStatus || 1,
+      paymentStatus: detail.paymentStatus || 5,
+      deliveryStatus: detail.deliveryStatus || 6,
       items: (detail.items || []).map((item) => ({
         productId: item.productId,
         amount: item.amount,
@@ -427,7 +404,6 @@ const removeOrderItem = (index) => {
 }
 
 const buildBaseOrderPayload = () => ({
-  activityId: Number(selectedActivityId.value),
   subscriberName: orderForm.value.subscriberName.trim(),
   subscriberEmail: orderForm.value.subscriberEmail.trim(),
   subscriberPhone: orderForm.value.subscriberPhone.trim(),
@@ -453,7 +429,6 @@ const validateOrderForm = () => {
   const currentForm = orderForm.value
   const orderItems = Array.isArray(currentForm.items) ? currentForm.items : []
 
-  if (!hasPositiveNumberValue(selectedActivityId.value)) missingFields.push('活動')
   if (isBlankValue(currentForm.subscriberName)) missingFields.push('訂購人')
   if (isBlankValue(currentForm.subscriberEmail)) missingFields.push('Email')
   if (isBlankValue(currentForm.subscriberPhone)) missingFields.push('電話')
@@ -549,12 +524,6 @@ const confirmDeleteOrder = async () => {
   }
 }
 
-watch(selectedActivityId, async () => {
-  page.value = 1
-  selectedOrder.value = null
-  await Promise.all([loadProducts(), loadOrders()])
-})
-
 watch([searchKeyword, statusFilter], () => {
   page.value = 1
 })
@@ -566,7 +535,7 @@ watch(totalPages, (nextTotalPages) => {
 })
 
 onMounted(async () => {
-  await Promise.all([loadActivities(), loadDeliveryTypes()])
+  await Promise.all([loadProducts(), loadOrders(), loadDeliveryTypes()])
 })
 </script>
 
@@ -590,76 +559,16 @@ onMounted(async () => {
       {{ errorMessage }}
     </MessageBlock>
 
-    <MessageBlock v-if="statusMessage" tone="success">
+    <MessageBlock v-if="statusMessage" tone="success" module="orders">
       {{ statusMessage }}
     </MessageBlock>
 
     <div class="orders-layout">
-      <aside class="activity-panel">
-        <div class="panel-title">
-          <h2>活動</h2>
-          <span>{{ activities.length }}</span>
-        </div>
-
-        <MessageBlock v-if="!isLoadingActivities && activities.length === 0" tone="empty">
-          目前沒有進行中的活動
-        </MessageBlock>
-
-        <div class="activity-list">
-          <button
-            v-for="activity in activities"
-            :key="activity.activityId"
-            type="button"
-            class="activity-item"
-            :class="{ 'activity-item--active': Number(activity.activityId) === Number(selectedActivityId) }"
-            @click="selectActivity(activity.activityId)"
-          >
-            <img
-              class="activity-image"
-              :src="activity.imageUrl || '/cc-admin-mark.svg'"
-              alt=""
-            />
-            <span class="activity-name">{{ activity.activityName || `#${activity.activityId}` }}</span>
-            <span
-              class="activity-kind-badge"
-              :class="{ 'activity-kind-badge--preorder': activity.isPreOrder }"
-            >
-              {{ getActivityKindText(activity) }}
-            </span>
-            <span class="activity-time">
-              {{ toDisplayDateTime(activity.activeStartTime) }} - {{ toDisplayDateTime(activity.activeEndTime) }}
-            </span>
-          </button>
-        </div>
-
-        <div v-if="selectedActivity" class="product-summary">
-          <div class="panel-title panel-title--compact">
-            <h2>可訂購商品</h2>
-            <span>{{ products.length }}</span>
-          </div>
-          <div class="product-list">
-            <div v-for="product in products" :key="product.productId" class="product-row">
-              <span>{{ product.name || `#${product.productId}` }}</span>
-              <strong>{{ formatCurrency(product.price) }}</strong>
-            </div>
-          </div>
-        </div>
-      </aside>
-
       <section class="orders-panel">
         <div class="orders-header">
           <div>
-            <p class="section-eyebrow">Activity</p>
-            <div class="orders-title-row">
-              <h2>{{ selectedActivity?.activityName || '訂單列表' }}</h2>
-              <span
-                v-if="selectedActivity"
-                class="activity-kind-badge"
-                :class="{ 'activity-kind-badge--preorder': selectedActivity.isPreOrder }"
-              >
-                {{ getActivityKindText(selectedActivity) }}
-              </span>
-            </div>
+            <p class="section-eyebrow">Orders</p>
+            <h2>全部訂單</h2>
           </div>
           <div class="orders-header-actions">
             <button
@@ -667,7 +576,6 @@ onMounted(async () => {
               type="button"
               aria-label="新增訂單"
               title="新增訂單"
-              :disabled="!selectedActivityId"
               @click="openCreateOrder"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -686,18 +594,25 @@ onMounted(async () => {
               <input v-model.trim="searchKeyword" type="search" />
             </label>
 
-            <label>
+            <div class="filter-select">
               <span>訂單狀態</span>
-              <select v-model="statusFilter">
-                <option
+              <CustomSelect
+                tone="orders"
+                :label="statusFilterLabel"
+                :open="openSelectKey === 'statusFilter'"
+                @toggle="toggleSelect('statusFilter')"
+              >
+                <button
                   v-for="option in orderStatusOptions"
                   :key="option.value"
-                  :value="option.value"
+                  class="custom-select-option"
+                  type="button"
+                  @click="selectStatusFilter(option.value)"
                 >
                   {{ option.label }}
-                </option>
-              </select>
-            </label>
+                </button>
+              </CustomSelect>
+            </div>
           </div>
 
           <div class="filter-actions">
@@ -715,11 +630,7 @@ onMounted(async () => {
           </div>
         </section>
 
-        <MessageBlock v-if="!selectedActivityId" tone="empty">
-          請先選擇活動
-        </MessageBlock>
-
-        <MessageBlock v-else-if="!isLoadingOrders && totalCount === 0" tone="empty">
+        <MessageBlock v-if="!isLoadingOrders && totalCount === 0" tone="empty" module="orders">
           {{ orders.length ? '沒有符合條件的訂單' : '目前沒有訂單' }}
         </MessageBlock>
 
@@ -880,7 +791,13 @@ onMounted(async () => {
               <img class="detail-image" :src="item.imageUrl || '/cc-admin-mark.svg'" alt="" />
               <div>
                 <strong>{{ item.name || `#${item.productId}` }}</strong>
+                <small class="detail-item-activity">
+                  活動：{{ item.activityName || `#${item.activityId}` }}
+                </small>
                 <span>{{ item.amount }} x {{ formatCurrency(item.price) }}</span>
+                <small class="detail-item-status">
+                  商品狀態：{{ getOrderProductStatusLabel(item.orderProductStatus) }}
+                </small>
                 <small v-if="item.info" class="detail-item-info">
                   商品備註 / 規格：{{ item.info }}
                 </small>
@@ -895,7 +812,7 @@ onMounted(async () => {
           </div>
         </section>
 
-        <MessageBlock v-else-if="isLoadingDetail" tone="empty">
+        <MessageBlock v-else-if="isLoadingDetail" tone="empty" module="orders">
           明細載入中
         </MessageBlock>
       </section>
@@ -989,7 +906,7 @@ onMounted(async () => {
 
 .orders-layout {
   display: grid;
-  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
 }
 
@@ -1198,7 +1115,8 @@ onMounted(async () => {
   gap: 12px;
 }
 
-.filter-bar label {
+.filter-bar label,
+.filter-select {
   display: grid;
   gap: 6px;
   color: #59665f;
@@ -1206,8 +1124,7 @@ onMounted(async () => {
   font-weight: 750;
 }
 
-.filter-bar input,
-.filter-bar select {
+.filter-bar input {
   width: 100%;
   min-height: 42px;
   border: 1px solid #eaded2;
@@ -1216,6 +1133,10 @@ onMounted(async () => {
   color: #25352f;
   font: inherit;
   padding: 0 10px;
+}
+
+.filter-select :deep(.custom-select-trigger) {
+  min-height: 42px;
 }
 
 .filter-actions,
@@ -1503,6 +1424,26 @@ tbody tr:last-child td {
 .detail-item span {
   color: #59665f;
   font-size: 0.86rem;
+}
+
+.detail-item-status {
+  width: fit-content;
+  border-radius: 999px;
+  background: #fff7e8;
+  color: #9a5b12;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 3px 8px;
+}
+
+.detail-item-activity {
+  width: fit-content;
+  border-radius: 999px;
+  background: #fff1df;
+  color: #824b0d;
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 3px 8px;
 }
 
 .detail-item-info {

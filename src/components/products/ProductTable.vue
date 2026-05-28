@@ -75,12 +75,20 @@ const props = defineProps({
     type: Function,
     required: true,
   },
+  showStockActions: {
+    type: Boolean,
+    default: false,
+  },
+  showOrderedAmount: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const hasActionsColumn = computed(() => props.columns.some((column) => column.key === 'actions'))
 const tableColspan = computed(() => Math.max(props.columns.length, 1))
 
-defineEmits(['sort', 'open-note', 'edit'])
+defineEmits(['sort', 'open-note', 'edit', 'stock-in', 'stock-out', 'stock-history'])
 
 const getProductTypeName = (productTypeId) => {
   const normalizedProductTypeId = Number(productTypeId)
@@ -147,6 +155,15 @@ const getProductTypeName = (productTypeId) => {
             <td class="money-cell">{{ formatCurrency(getCostTwd(product), 'NT$') }}</td>
             <td class="money-cell">{{ formatCurrency(product.price, 'NT$') }}</td>
             <td>{{ product.amount.toLocaleString() }}</td>
+            <td v-if="showOrderedAmount">{{ product.orderedAmount.toLocaleString() }}</td>
+            <td>
+              <span
+                class="type-badge product-activity-kind-badge"
+                :class="{ 'is-preorder': product.isPreOrder }"
+              >
+                {{ product.isPreOrder ? '預購' : '現貨' }}
+              </span>
+            </td>
             <td>
               <span class="type-badge product-stock-badge" :class="{ 'is-out': product.isOutStock }">
                 {{ product.isOutStock ? '缺貨' : '尚有庫存' }}
@@ -173,7 +190,30 @@ const getProductTypeName = (productTypeId) => {
             </td>
             <td>{{ formatDateTime(product.updateAt || product.createdAt) }}</td>
             <td v-if="hasActionsColumn">
-              <div class="table-actions">
+              <div v-if="showStockActions" class="table-actions table-actions--stock">
+                <button
+                  class="table-action-button table-action-button--stock-in"
+                  type="button"
+                  @click="$emit('stock-in', product)"
+                >
+                  進貨
+                </button>
+                <button
+                  class="table-action-button table-action-button--stock-out"
+                  type="button"
+                  @click="$emit('stock-out', product)"
+                >
+                  出貨
+                </button>
+                <button
+                  class="table-action-button table-action-button--stock-history"
+                  type="button"
+                  @click="$emit('stock-history', product)"
+                >
+                  明細
+                </button>
+              </div>
+              <div v-else class="table-actions">
                 <button
                   class="table-action-button icon-action-button table-action-button--edit"
                   type="button"
@@ -212,7 +252,7 @@ const getProductTypeName = (productTypeId) => {
 
 .product-table {
   width: 100%;
-  min-width: 1180px;
+  min-width: 1280px;
   border-collapse: separate;
   border-spacing: 0;
   background: #fffdf9;
@@ -377,6 +417,18 @@ const getProductTypeName = (productTypeId) => {
   color: #22614c;
 }
 
+.product-activity-kind-badge {
+  border-color: #bfd8cb;
+  background: #f0faf4;
+  color: #22614c;
+}
+
+.product-activity-kind-badge.is-preorder {
+  border-color: #9bc6b1;
+  background: #e7f5ec;
+  color: #1f6154;
+}
+
 .product-stock-badge.is-out {
   border-color: #f0c3c8;
   background: #fff1f2;
@@ -452,6 +504,10 @@ const getProductTypeName = (productTypeId) => {
   justify-content: center;
 }
 
+.table-actions--stock {
+  gap: 8px;
+}
+
 .table-action-button {
   min-height: 34px;
   border: 1px solid #e8d8c8;
@@ -485,6 +541,42 @@ const getProductTypeName = (productTypeId) => {
   background: #1f6154;
   box-shadow: 0 8px 18px rgb(39 120 103 / 16%);
   color: #ffffff;
+}
+
+.table-action-button--stock-in {
+  border-color: #277867;
+  background: #277867;
+  color: #ffffff;
+}
+
+.table-action-button--stock-out {
+  border-color: #c48445;
+  background: #fff7ee;
+  color: #9a5b12;
+}
+
+.table-action-button--stock-history {
+  border-color: #d8e6de;
+  background: #f2faf5;
+  color: #1f6154;
+}
+
+.table-action-button--stock-in:hover {
+  border-color: #1f6154;
+  background: #1f6154;
+  color: #ffffff;
+}
+
+.table-action-button--stock-out:hover {
+  border-color: #c48445;
+  background: #fff1df;
+  color: #824b0d;
+}
+
+.table-action-button--stock-history:hover {
+  border-color: #277867;
+  background: #e7f5ec;
+  color: #1f6154;
 }
 
 .icon-action-button {

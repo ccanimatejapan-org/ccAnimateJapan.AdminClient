@@ -26,6 +26,8 @@ src/
 - `adminAuth.js`：登入相關 API。
 - `activities.js`：活動、活動類型、動漫、刪除/還原活動。
 - `activityProducts.js`：活動商品列表、新增、更新。
+- `orders.js`：全訂單清單、跨活動可訂商品、訂單 CRUD 與 PDF/Email。
+- `productStockTransactions.js`：庫存進出貨異動與歷程。
 
 規則：
 
@@ -62,6 +64,7 @@ src/
 - `components/products`：商品管理相關元件。
 - `components/dashboard`：Dashboard 模組卡片。
 - `components/inventory`：庫存頁表格。
+- `components/activities/CustomSelect.vue`：全站共用下拉式選單；以 `tone` 套用活動、商品、庫存或訂單模組色。
 
 規則：
 
@@ -159,12 +162,35 @@ activity.vue
   -> createActivityApi() / updateActivityApi()
 ```
 
+商品與庫存：
+
+```text
+ActivityProducts.vue / Inventory.vue
+  -> activityProducts.js
+  -> API 回傳 amount / isOutStock
+  -> ProductTable.vue 僅顯示與篩選回傳狀態
+```
+
+- `isOutStock` 不可由前端以數量推算，也不可由商品表單修改。
+- 現貨商品建立時可填初始數量；該數量由後端建立庫存異動。後續數量變動由庫存管理操作。
+
+訂單管理：
+
+```text
+Orders.vue
+  -> listAllOrders() / listOrderProducts()
+  -> 全部訂單與跨活動商品選項
+  -> 明細 item.activityName 顯示商品所屬活動
+```
+
 ## CSS 規則
 
 - 不使用 `src/style.css` 集中管理頁面樣式。
 - 元件自己的 CSS 放在自己的 `.vue`。
 - 全站 reset / body / root 等極少數全域設定放在 `App.vue`。
 - 共用 UI 樣式應該抽成 component，而不是抽成大型 CSS class。
+- 所有下拉式選單使用 `CustomSelect`，不使用原生 `<select>` 或第三方 select。
+- 模組色：活動管理使用紅色、訂單管理使用橘黃色、庫存與商品管理使用綠色；下拉與 Modal 同樣遵循模組色。
 
 ## 新增功能時放哪裡
 

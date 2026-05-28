@@ -53,6 +53,10 @@ const props = defineProps({
     type: Number,
     default: 5,
   },
+  isSpotActivity: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 defineEmits(['close', 'submit', 'image-change', 'remove-existing-image', 'remove-new-image'])
@@ -109,6 +113,7 @@ const selectProductType = (productTypeId) => {
         </FormField>
         <FormField as="div" label="商品類型">
           <CustomSelect
+            tone="product"
             :label="productTypeSelectLabel"
             :open="isProductTypeSelectOpen"
             :disabled="isLoadingProductTypes || !productTypes.length"
@@ -125,14 +130,15 @@ const selectProductType = (productTypeId) => {
             </button>
           </CustomSelect>
         </FormField>
-        <FormField as="div" label="是否缺貨" soft>
-          <label class="stock-switch">
-            <input v-model="form.isOutStock" type="checkbox" />
-            <span class="stock-switch-track" aria-hidden="true">
-              <span class="stock-switch-thumb"></span>
-            </span>
-            <span class="stock-switch-text">{{ form.isOutStock ? '缺貨' : '尚有庫存' }}</span>
-          </label>
+        <FormField v-if="isSpotActivity" label="商品數量" soft>
+          <input
+            v-model.number="form.amount"
+            min="0"
+            step="1"
+            type="number"
+            :readonly="Boolean(editingProductId)"
+          />
+          <small v-if="editingProductId" class="stock-help">庫存數量請於庫存管理進行異動。</small>
         </FormField>
         <FormField as="div" label="商品圖片（最多 5 張）" full soft>
           <ProductImagePicker
@@ -233,64 +239,10 @@ const selectProductType = (productTypeId) => {
   color: #4e443d;
 }
 
-.stock-switch {
-  display: flex;
-  min-height: 46px;
-  align-items: center;
-  gap: 12px;
-  border: 1px solid #d8e6de;
-  border-radius: 10px;
-  background: #f8fcfa;
-  padding: 0 13px;
-}
-
-.stock-switch input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
-
-.stock-switch-track {
-  position: relative;
-  display: inline-flex;
-  width: 46px;
-  height: 26px;
-  flex: 0 0 auto;
-  align-items: center;
-  border-radius: 999px;
-  background: #dce5df;
-  transition: background 0.18s ease;
-}
-
-.stock-switch-thumb {
-  position: absolute;
-  left: 3px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 3px 8px rgb(19 32 28 / 18%);
-  transition: transform 0.18s ease;
-}
-
-.stock-switch input:checked + .stock-switch-track {
-  background: #277867;
-}
-
-.stock-switch input:checked + .stock-switch-track .stock-switch-thumb {
-  transform: translateX(20px);
-}
-
-.stock-switch input:focus-visible + .stock-switch-track {
-  box-shadow: 0 0 0 3px rgb(39 120 103 / 15%);
-}
-
-.stock-switch-text {
-  color: #384942;
-  font-weight: 800;
+.stock-help {
+  color: #5e786f;
+  font-size: 0.78rem;
+  font-weight: 650;
 }
 
 .dialog-actions {

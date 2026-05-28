@@ -12,6 +12,10 @@ defineProps({
     type: String,
     default: 'error',
   },
+  module: {
+    type: String,
+    default: '',
+  },
 })
 </script>
 
@@ -20,7 +24,7 @@ defineProps({
     :is="as"
     v-bind="$attrs"
     class="message-block"
-    :class="`message-block--${tone}`"
+    :class="[`message-block--${tone}`, module && `message-block--module-${module}`]"
   >
     <slot />
   </component>
@@ -51,5 +55,28 @@ defineProps({
   border: 1px dashed #cddbd2;
   color: #59665f;
   padding: 18px;
+}
+
+.message-block--success.message-block--module-activity,
+.message-block--empty.message-block--module-activity {
+  border-color: #e6c3c7;
+  background: #fff4f4;
+  color: #963b44;
+}
+
+.message-block--success.message-block--module-orders,
+.message-block--empty.message-block--module-orders {
+  border-color: #edcd9c;
+  background: #fff7eb;
+  color: #955916;
+}
+
+.message-block--success.message-block--module-product,
+.message-block--empty.message-block--module-product,
+.message-block--success.message-block--module-inventory,
+.message-block--empty.message-block--module-inventory {
+  border-color: #bfd8cb;
+  background: #f0faf4;
+  color: #22614c;
 }
 </style>

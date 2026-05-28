@@ -12,13 +12,17 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  tone: {
+    type: String,
+    default: 'activity',
+  },
 })
 
 defineEmits(['toggle'])
 </script>
 
 <template>
-  <div class="custom-select" :class="{ 'is-open': open }">
+  <div class="custom-select" :class="[`custom-select--${tone}`, { 'is-open': open }]">
     <button
       class="custom-select-trigger"
       type="button"
@@ -36,7 +40,23 @@ defineEmits(['toggle'])
 
 <style scoped>
 .custom-select {
+  --select-accent: #b84d55;
+  --select-accent-soft: #fff0f0;
+  --select-accent-text: #8f3f47;
   position: relative;
+}
+
+.custom-select--product,
+.custom-select--inventory {
+  --select-accent: #277867;
+  --select-accent-soft: #f0faf4;
+  --select-accent-text: #1f6154;
+}
+
+.custom-select--orders {
+  --select-accent: #c48445;
+  --select-accent-soft: #fff7ee;
+  --select-accent-text: #824b0d;
 }
 
 .custom-select-trigger {
@@ -56,8 +76,8 @@ defineEmits(['toggle'])
 
 .custom-select-trigger:hover:not(:disabled),
 .custom-select.is-open .custom-select-trigger {
-  border-color: #b84d55;
-  box-shadow: 0 0 0 3px rgb(184 77 85 / 12%);
+  border-color: var(--select-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--select-accent) 14%, transparent);
 }
 
 .custom-select-trigger:disabled {
@@ -93,8 +113,8 @@ defineEmits(['toggle'])
 
 .custom-select :slotted(.custom-select-option:hover),
 .custom-select :slotted(.custom-select-option:focus-visible) {
-  background: #fff4e8;
-  color: #7d4d2f;
+  background: var(--select-accent-soft);
+  color: var(--select-accent-text);
   outline: none;
 }
 </style>

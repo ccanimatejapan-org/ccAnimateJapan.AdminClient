@@ -28,6 +28,7 @@ export const mapProductFromApi = (product, fallbackActivityId = 0) => ({
   rate: toNumber(product.rate),
   price: toNumber(product.price),
   amount: toNumber(product.amount),
+  orderedAmount: toNumber(product.orderedAmount),
   isOutStock: product.isOutStock === true,
   productTypeId: toNumber(product.productTypeId),
   activityId: toNumber(product.activityId, fallbackActivityId),

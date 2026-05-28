@@ -81,7 +81,9 @@ const getProductLabel = (item) => {
   if (!productId) return '請選擇商品'
 
   const product = props.products.find((productItem) => Number(productItem.productId) === productId)
-  return product?.name || `#${productId}`
+  if (!product) return `#${productId}`
+
+  return `${product.name || `#${productId}`} - ${product.activityName || `活動 #${product.activityId}`}`
 }
 </script>
 
@@ -114,6 +116,7 @@ const getProductLabel = (item) => {
         <div class="form-field">
           <span class="field-label">配送方式</span>
           <CustomSelect
+            tone="orders"
             :label="getDeliveryTypeLabel()"
             :open="openSelectKey === 'deliveryTypeId'"
             @toggle="toggleSelect('deliveryTypeId')"
@@ -136,6 +139,7 @@ const getProductLabel = (item) => {
         <div v-if="props.editingOrderId" class="form-field">
           <span class="field-label">訂單狀態</span>
           <CustomSelect
+            tone="orders"
             :label="getStatusLabel('orderStatus', props.orderStatusOptions)"
             :open="openSelectKey === 'orderStatus'"
             @toggle="toggleSelect('orderStatus')"
@@ -155,6 +159,7 @@ const getProductLabel = (item) => {
         <div v-if="props.editingOrderId" class="form-field">
           <span class="field-label">付款狀態</span>
           <CustomSelect
+            tone="orders"
             :label="getStatusLabel('paymentStatus', props.paymentStatusOptions)"
             :open="openSelectKey === 'paymentStatus'"
             @toggle="toggleSelect('paymentStatus')"
@@ -174,6 +179,7 @@ const getProductLabel = (item) => {
         <div v-if="props.editingOrderId" class="form-field">
           <span class="field-label">物流狀態</span>
           <CustomSelect
+            tone="orders"
             :label="getStatusLabel('deliveryStatus', props.deliveryStatusOptions)"
             :open="openSelectKey === 'deliveryStatus'"
             @toggle="toggleSelect('deliveryStatus')"
@@ -201,6 +207,7 @@ const getProductLabel = (item) => {
               <div class="form-field">
                 <span class="field-label">商品</span>
                 <CustomSelect
+                  tone="orders"
                   :label="getProductLabel(item)"
                   :open="openSelectKey === `product-${index}`"
                   @toggle="toggleSelect(`product-${index}`)"
@@ -215,7 +222,7 @@ const getProductLabel = (item) => {
                     type="button"
                     @click="selectItemProduct(item, product.productId)"
                   >
-                    {{ product.name || `#${product.productId}` }}
+                    {{ product.name || `#${product.productId}` }} - {{ product.activityName || `活動 #${product.activityId}` }}
                   </button>
                 </CustomSelect>
               </div>

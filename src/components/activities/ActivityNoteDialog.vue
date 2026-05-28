@@ -10,6 +10,10 @@ defineProps({
     type: String,
     default: '',
   },
+  tone: {
+    type: String,
+    default: 'activity',
+  },
 })
 
 defineEmits(['close'])
@@ -17,7 +21,7 @@ defineEmits(['close'])
 
 <template>
   <div class="modal-backdrop">
-    <section class="note-dialog" role="dialog" aria-modal="true" aria-labelledby="note-dialog-title">
+    <section :class="`note-dialog--${tone}`" class="note-dialog" role="dialog" aria-modal="true" aria-labelledby="note-dialog-title">
       <div class="dialog-heading">
         <div>
           <h2 id="note-dialog-title">{{ title }}</h2>
@@ -42,6 +46,9 @@ defineEmits(['close'])
 }
 
 .note-dialog {
+  --note-border: #eaded2;
+  --note-background: rgb(255 250 244 / 98%);
+  --note-shadow: rgb(114 74 56 / 22%);
   display: grid;
   align-content: start;
   grid-template-rows: auto minmax(0, 1fr);
@@ -50,13 +57,20 @@ defineEmits(['close'])
   max-height: 80vh;
   overflow: hidden;
   gap: 20px;
-  border: 1px solid #eaded2;
+  border: 1px solid var(--note-border);
   border-radius: 18px;
   background:
-    linear-gradient(135deg, rgb(255 255 255 / 96%), rgb(255 250 244 / 98%)),
+    linear-gradient(135deg, rgb(255 255 255 / 96%), var(--note-background)),
     #ffffff;
-  box-shadow: 0 26px 76px rgb(114 74 56 / 22%);
+  box-shadow: 0 26px 76px var(--note-shadow);
   padding: 28px;
+}
+
+.note-dialog--product,
+.note-dialog--inventory {
+  --note-border: #d8e6de;
+  --note-background: rgb(243 249 246 / 98%);
+  --note-shadow: rgb(39 120 103 / 18%);
 }
 
 .dialog-heading {
@@ -64,7 +78,7 @@ defineEmits(['close'])
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
-  border-bottom: 1px solid #f0e5dc;
+  border-bottom: 1px solid var(--note-border);
   padding-bottom: 16px;
 }
 
@@ -79,7 +93,7 @@ defineEmits(['close'])
   min-height: 0;
   max-height: none;
   overflow: auto;
-  border: 1px solid #eaded2;
+  border: 1px solid var(--note-border);
   border-radius: 14px;
   background: #fffdf9;
   color: #384942;

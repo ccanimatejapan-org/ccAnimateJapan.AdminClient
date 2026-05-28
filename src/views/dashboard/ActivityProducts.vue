@@ -61,6 +61,7 @@ const activityName = computed(() => selectedActivity.value?.name || `活動 #${a
 const activityKindText = computed(() =>
   selectedActivity.value ? (selectedActivity.value.isPreOrder ? '預購' : '現貨') : '',
 )
+const isSpotActivity = computed(() => selectedActivity.value?.isPreOrder === false)
 
 const isDialogOpen = ref(false)
 const editingProductId = ref(null)
@@ -92,7 +93,6 @@ const emptyForm = {
   saleRate: 0.24,
   price: 0,
   amount: 0,
-  isOutStock: false,
   productTypeId: 1,
   info: '',
 }
@@ -235,6 +235,14 @@ const validateProductForm = () => {
     return false
   }
 
+  if (!editingProductId.value && isSpotActivity.value) {
+    const amount = Number(form.amount)
+    if (!Number.isInteger(amount) || amount < 0) {
+      errorMessage.value = '現貨商品數量必須是大於或等於 0 的整數。'
+      return false
+    }
+  }
+
   return true
 }
 
@@ -278,6 +286,11 @@ const toggleFilterValue = (key, value) => {
 
 const clearFilterValue = (key) => {
   searchFilters[key] = []
+}
+
+const selectPageSize = (size) => {
+  pagination.pageSize = Number(size)
+  openFilterSelectKey.value = ''
 }
 
 const getSelectedFilterLabel = (key, options, placeholder) => {
@@ -402,16 +415,22 @@ const updatePriceFromSaleRate = () => {
   form.price = Math.round(toNumber(form.japanCost) * toNumber(form.saleRate))
 }
 
-const buildProductPayload = () => ({
-  name: form.name.trim(),
-  japanCost: toNumber(form.japanCost),
-  rate: toNumber(form.rate),
-  price: toNumber(form.price),
-  amount: 0,
-  isOutStock: Boolean(form.isOutStock),
-  productTypeId: toNumber(form.productTypeId),
-  info: sanitizeHtml(form.info).trim(),
-})
+const buildProductPayload = () => {
+  const payload = {
+    name: form.name.trim(),
+    japanCost: toNumber(form.japanCost),
+    rate: toNumber(form.rate),
+    price: toNumber(form.price),
+    productTypeId: toNumber(form.productTypeId),
+    info: sanitizeHtml(form.info).trim(),
+  }
+
+  if (!editingProductId.value) {
+    payload.amount = isSpotActivity.value ? Math.max(0, toNumber(form.amount)) : 0
+  }
+
+  return payload
+}
 
 const appendIfValue = (formData, key, value) => {
   if (value !== undefined && value !== null && value !== '') {
@@ -555,7 +574,11 @@ const loadProducts = async () => {
 
   try {
     const responseProducts = await listActivityProducts(activityId.value)
-    products.value = responseProducts.map((product) => mapProductFromApi(product, activityId.value))
+    products.value = responseProducts.map((product) => ({
+      ...mapProductFromApi(product, activityId.value),
+      activityName: activityName.value,
+      isPreOrder: selectedActivity.value?.isPreOrder === true,
+    }))
   } catch (err) {
     errorMessage.value = err.message || '載入商品失敗。'
   } finally {
@@ -619,8 +642,7 @@ const openEditDialog = (product) => {
     rate: product.rate,
     saleRate: getSaleRateFromProduct(product),
     price: product.price,
-    amount: 0,
-    isOutStock: product.isOutStock,
+    amount: product.amount,
     productTypeId: product.productTypeId || getDefaultProductTypeId(),
     info: product.info || '',
   })
@@ -669,7 +691,11 @@ const saveProduct = async () => {
     const response = editingProductId.value
       ? await updateActivityProduct(activityId.value, payload)
       : await createActivityProduct(activityId.value, payload)
-    const savedProduct = mapProductFromApi(response?.data, activityId.value)
+    const savedProduct = {
+      ...mapProductFromApi(response?.data, activityId.value),
+      activityName: activityName.value,
+      isPreOrder: selectedActivity.value?.isPreOrder === true,
+    }
 
     if (editingProductId.value) {
       products.value = products.value.map((product) =>
@@ -689,22 +715,21 @@ const saveProduct = async () => {
   }
 }
 
-const loadPage = () => {
-  loadActivity()
-  loadProductTypes()
-  loadProducts()
+const loadPage = async () => {
+  await loadActivity()
+  await Promise.all([loadProductTypes(), loadProducts()])
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadActivityRateDefaults()
-  loadPage()
+  await loadPage()
 })
 onBeforeUnmount(() => {
   resetProductImages()
   setDialogScrollLock(false)
 })
 
-watch(activityId, () => {
+watch(activityId, async () => {
   loadActivityRateDefaults()
   products.value = []
   statusMessage.value = ''
@@ -712,7 +737,7 @@ watch(activityId, () => {
   productTypeErrorMessage.value = ''
   clearSearchFilters()
   closeDialog()
-  loadPage()
+  await loadPage()
 })
 
 watch(
@@ -753,7 +778,7 @@ watch(isAnyDialogOpen, setDialogScrollLock, { immediate: true })
 
 <template>
   <PageShell class="activity-management-page">
-    <MessageBlock v-if="statusMessage" tone="success">{{ statusMessage }}</MessageBlock>
+    <MessageBlock v-if="statusMessage" tone="success" module="product">{{ statusMessage }}</MessageBlock>
     <MessageBlock v-if="errorMessage && !isDialogOpen">{{ errorMessage }}</MessageBlock>
 
     <div class="product-page-toolbar">
@@ -839,7 +864,7 @@ watch(isAnyDialogOpen, setDialogScrollLock, { immediate: true })
               />
             </svg>
           </IconButton>
-          <CountBadge>{{ totalProductsLabel }}</CountBadge>
+          <CountBadge tone="product">{{ totalProductsLabel }}</CountBadge>
         </div>
       </div>
 
@@ -857,6 +882,7 @@ watch(isAnyDialogOpen, setDialogScrollLock, { immediate: true })
           <div class="activity-filter-field">
             <span>商品類型</span>
             <CustomSelect
+              tone="product"
               :label="getFilterProductTypeLabel()"
               :open="isFilterSelectOpen('productTypeIds')"
               :disabled="isLoadingProductTypes"
@@ -884,6 +910,7 @@ watch(isAnyDialogOpen, setDialogScrollLock, { immediate: true })
           <div class="activity-filter-field">
             <span>庫存狀態</span>
             <CustomSelect
+              tone="product"
               :label="getFilterStockStatusLabel()"
               :open="isFilterSelectOpen('stockStatuses')"
               @toggle="toggleFilterSelect('stockStatuses')"
@@ -941,12 +968,25 @@ watch(isAnyDialogOpen, setDialogScrollLock, { immediate: true })
         <div class="activity-pagination-summary">{{ paginationSummary }}</div>
 
         <div class="activity-pagination-actions">
-          <label class="activity-page-size">
+          <div class="activity-page-size">
             <span>每頁</span>
-            <select v-model.number="pagination.pageSize">
-              <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size }}</option>
-            </select>
-          </label>
+            <CustomSelect
+              tone="product"
+              :label="String(pagination.pageSize)"
+              :open="isFilterSelectOpen('pageSize')"
+              @toggle="toggleFilterSelect('pageSize')"
+            >
+              <button
+                v-for="size in pageSizeOptions"
+                :key="size"
+                class="custom-select-option"
+                type="button"
+                @click="selectPageSize(size)"
+              >
+                {{ size }}
+              </button>
+            </CustomSelect>
+          </div>
 
           <AppButton pill :disabled="pagination.page <= 1" @click="goToPreviousPage">
             上一頁
@@ -972,6 +1012,7 @@ watch(isAnyDialogOpen, setDialogScrollLock, { immediate: true })
       :product-images="productImageItems"
       :remaining-image-slots="remainingProductImageSlots"
       :image-limit="productImageLimit"
+      :is-spot-activity="isSpotActivity"
       @close="closeDialog"
       @submit="saveProduct"
       @image-change="handleProductImageChange"
@@ -981,6 +1022,7 @@ watch(isAnyDialogOpen, setDialogScrollLock, { immediate: true })
 
     <ActivityNoteDialog
       v-if="isNoteDialogOpen"
+      tone="product"
       :title="selectedNoteTitle"
       :html="selectedNoteHtml"
       @close="closeNoteDialog"
@@ -1182,8 +1224,7 @@ watch(isAnyDialogOpen, setDialogScrollLock, { immediate: true })
   font-weight: 700;
 }
 
-.activity-filter-field input,
-.activity-page-size select {
+.activity-filter-field input {
   width: 100%;
   min-height: 44px;
   border: 1px solid #e2d2c7;
@@ -1193,8 +1234,7 @@ watch(isAnyDialogOpen, setDialogScrollLock, { immediate: true })
   padding: 0 12px;
 }
 
-.activity-filter-field input:focus,
-.activity-page-size select:focus {
+.activity-filter-field input:focus {
   border-color: #277867;
   box-shadow: 0 0 0 3px rgb(39 120 103 / 15%);
   outline: none;
@@ -1276,8 +1316,12 @@ watch(isAnyDialogOpen, setDialogScrollLock, { immediate: true })
   font-weight: 700;
 }
 
-.activity-page-size select {
+.activity-page-size :deep(.custom-select) {
   width: 84px;
+}
+
+.activity-page-size :deep(.custom-select-trigger) {
+  min-height: 44px;
 }
 
 .activity-page-indicator {

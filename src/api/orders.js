@@ -52,6 +52,13 @@ export const listOrderActivityProducts = async (activityId) => {
   return response?.data || []
 }
 
+export const listOrderProducts = async () => {
+  const response = await apiGet('/api/orders/products', {
+    headers: authHeaders(),
+  })
+  return response?.data || []
+}
+
 export const listDeliveryTypes = async () => {
   const response = await apiGet('/api/orders/delivery-types', {
     headers: authHeaders(),
@@ -113,6 +120,39 @@ export const listAllOrdersByActivity = async (activityId) => {
 
   do {
     const result = await listOrdersByActivity(activityId, { page, pageSize })
+    const pageItems = result.items || []
+    items.push(...pageItems)
+    totalPages = result.totalPages || 1
+    totalCount = result.totalCount || items.length
+    page += 1
+  } while (page <= totalPages && items.length < totalCount)
+
+  return items
+}
+
+export const listOrders = async ({ page = 1, pageSize = 20, keyword = '', orderStatus = '' } = {}) => {
+  const query = toQueryString({ page, pageSize, keyword, orderStatus })
+  const response = await apiGet(`/api/orders${query}`, {
+    headers: authHeaders(),
+  })
+  return response?.data || {
+    page,
+    pageSize,
+    totalCount: 0,
+    totalPages: 0,
+    items: [],
+  }
+}
+
+export const listAllOrders = async () => {
+  const pageSize = 100
+  let page = 1
+  let totalPages = 1
+  let totalCount = 0
+  const items = []
+
+  do {
+    const result = await listOrders({ page, pageSize })
     const pageItems = result.items || []
     items.push(...pageItems)
     totalPages = result.totalPages || 1

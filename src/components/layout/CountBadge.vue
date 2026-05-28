@@ -4,11 +4,15 @@ defineProps({
     type: Boolean,
     default: false,
   },
+  tone: {
+    type: String,
+    default: 'inventory',
+  },
 })
 </script>
 
 <template>
-  <span class="count-badge" :class="{ 'count-badge--accent': accent }">
+  <span class="count-badge" :class="[`count-badge--${tone}`, { 'count-badge--accent': accent }]">
     <slot />
   </span>
 </template>
@@ -29,6 +33,19 @@ defineProps({
   border-color: #e8d8c8;
   background: #fff8f0;
   color: #7d4d2f;
+}
+
+.count-badge--activity {
+  border-color: #efc9cc;
+  background: #fff1f2;
+  color: #9d3e46;
+}
+
+.count-badge--product,
+.count-badge--inventory {
+  border-color: #bfd8cb;
+  background: #f0faf4;
+  color: #22614c;
 }
 
 @media (max-width: 560px) {
