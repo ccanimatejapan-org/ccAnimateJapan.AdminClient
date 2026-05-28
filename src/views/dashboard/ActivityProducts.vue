@@ -280,6 +280,11 @@ const clearFilterValue = (key) => {
   searchFilters[key] = []
 }
 
+const selectPageSize = (size) => {
+  pagination.pageSize = Number(size)
+  openFilterSelectKey.value = ''
+}
+
 const getSelectedFilterLabel = (key, options, placeholder) => {
   const selectedValues = searchFilters[key].map(String)
   if (!selectedValues.length) return placeholder
@@ -857,6 +862,7 @@ watch(isAnyDialogOpen, setDialogScrollLock, { immediate: true })
           <div class="activity-filter-field">
             <span>商品類型</span>
             <CustomSelect
+              tone="product"
               :label="getFilterProductTypeLabel()"
               :open="isFilterSelectOpen('productTypeIds')"
               :disabled="isLoadingProductTypes"
@@ -884,6 +890,7 @@ watch(isAnyDialogOpen, setDialogScrollLock, { immediate: true })
           <div class="activity-filter-field">
             <span>庫存狀態</span>
             <CustomSelect
+              tone="product"
               :label="getFilterStockStatusLabel()"
               :open="isFilterSelectOpen('stockStatuses')"
               @toggle="toggleFilterSelect('stockStatuses')"
@@ -941,12 +948,25 @@ watch(isAnyDialogOpen, setDialogScrollLock, { immediate: true })
         <div class="activity-pagination-summary">{{ paginationSummary }}</div>
 
         <div class="activity-pagination-actions">
-          <label class="activity-page-size">
+          <div class="activity-page-size">
             <span>每頁</span>
-            <select v-model.number="pagination.pageSize">
-              <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size }}</option>
-            </select>
-          </label>
+            <CustomSelect
+              tone="product"
+              :label="String(pagination.pageSize)"
+              :open="isFilterSelectOpen('pageSize')"
+              @toggle="toggleFilterSelect('pageSize')"
+            >
+              <button
+                v-for="size in pageSizeOptions"
+                :key="size"
+                class="custom-select-option"
+                type="button"
+                @click="selectPageSize(size)"
+              >
+                {{ size }}
+              </button>
+            </CustomSelect>
+          </div>
 
           <AppButton pill :disabled="pagination.page <= 1" @click="goToPreviousPage">
             上一頁
@@ -1164,7 +1184,7 @@ watch(isAnyDialogOpen, setDialogScrollLock, { immediate: true })
   margin-bottom: 20px;
   border: 1px solid #d8e6de;
   border-radius: 14px;
-  background: #f8fcfa;
+  background: #fffdf9;
   padding: 18px;
 }
 
@@ -1182,19 +1202,17 @@ watch(isAnyDialogOpen, setDialogScrollLock, { immediate: true })
   font-weight: 700;
 }
 
-.activity-filter-field input,
-.activity-page-size select {
+.activity-filter-field input {
   width: 100%;
   min-height: 44px;
-  border: 1px solid #e2d2c7;
+  border: 1px solid #eaded2;
   border-radius: 10px;
-  background: #fffaf4;
+  background: #f4fbf7;
   color: #2a2825;
   padding: 0 12px;
 }
 
-.activity-filter-field input:focus,
-.activity-page-size select:focus {
+.activity-filter-field input:focus {
   border-color: #277867;
   box-shadow: 0 0 0 3px rgb(39 120 103 / 15%);
   outline: none;
@@ -1209,8 +1227,8 @@ watch(isAnyDialogOpen, setDialogScrollLock, { immediate: true })
 }
 
 .custom-select-checkbox-option.is-selected {
-  background: #f0faf4;
-  color: #1f6154;
+  background: var(--select-accent-soft);
+  color: var(--select-accent-text);
 }
 
 .custom-select-checkbox-option input {
@@ -1276,8 +1294,12 @@ watch(isAnyDialogOpen, setDialogScrollLock, { immediate: true })
   font-weight: 700;
 }
 
-.activity-page-size select {
+.activity-page-size :deep(.custom-select) {
   width: 84px;
+}
+
+.activity-page-size :deep(.custom-select-trigger) {
+  min-height: 44px;
 }
 
 .activity-page-indicator {

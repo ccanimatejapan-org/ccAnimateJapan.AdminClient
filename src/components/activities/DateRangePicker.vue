@@ -50,6 +50,10 @@ const props = defineProps({
     type: Function,
     required: true,
   },
+  tone: {
+    type: String,
+    default: 'activity',
+  },
 })
 
 const emit = defineEmits(['toggle', 'shift', 'select', 'close'])
@@ -80,7 +84,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="date-range-field">
     <span class="date-range-label">{{ label }}</span>
-    <div ref="rootElement" class="date-range-picker" :class="{ 'is-open': open }">
+    <div ref="rootElement" class="date-range-picker" :class="[`date-range-picker--${tone}`, { 'is-open': open }]">
       <button class="date-range-trigger" type="button" @click="emit('toggle')">
         <span>{{ rangeLabel }}</span>
         <span aria-hidden="true">v</span>
@@ -164,7 +168,32 @@ onBeforeUnmount(() => {
 }
 
 .date-range-picker {
+  --date-range-accent: #b84d55;
+  --date-range-accent-soft: #fff8f0;
+  --date-range-accent-hover: #fff8f0;
+  --date-range-shell-background: #fff8f0;
+  --date-range-nav-background: #fff8f0;
+  --date-range-summary-background: #fff8f0;
   position: relative;
+}
+
+.date-range-picker--product,
+.date-range-picker--inventory {
+  --date-range-accent: #277867;
+  --date-range-accent-soft: #f4fbf7;
+  --date-range-accent-hover: #f4fbf7;
+  --date-range-shell-background: #f4fbf7;
+  --date-range-nav-background: #f4fbf7;
+  --date-range-summary-background: #f4fbf7;
+}
+
+.date-range-picker--orders {
+  --date-range-accent: #c48445;
+  --date-range-accent-soft: #fff7eb;
+  --date-range-accent-hover: #fff7eb;
+  --date-range-shell-background: #fff7eb;
+  --date-range-nav-background: #fff7eb;
+  --date-range-summary-background: #fff7eb;
 }
 
 .date-range-trigger {
@@ -176,7 +205,7 @@ onBeforeUnmount(() => {
   gap: 12px;
   border: 1px solid #eaded2;
   border-radius: 10px;
-  background: #fffdf9;
+  background: var(--date-range-shell-background);
   color: #2a2825;
   font: inherit;
   padding: 0 12px;
@@ -198,8 +227,8 @@ onBeforeUnmount(() => {
 
 .date-range-trigger:hover,
 .date-range-picker.is-open .date-range-trigger {
-  border-color: #b84d55;
-  box-shadow: 0 0 0 3px rgb(184 77 85 / 12%);
+  border-color: #eaded2;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--date-range-accent) 12%, transparent);
 }
 
 .date-range-menu {
@@ -212,7 +241,7 @@ onBeforeUnmount(() => {
   gap: 16px;
   border: 1px solid #eaded2;
   border-radius: 18px;
-  background: #fffdf9;
+  background: var(--date-range-shell-background);
   box-shadow: 0 24px 58px rgb(114 74 56 / 18%);
   padding: 18px;
 }
@@ -238,8 +267,8 @@ onBeforeUnmount(() => {
   place-items: center;
   border: 1px solid #eaded2;
   border-radius: 999px;
-  background: #fff8ef;
-  color: #8f3f47;
+  background: var(--date-range-nav-background);
+  color: var(--date-range-accent);
   font-family: inherit;
   font-size: 1.1rem;
   line-height: 1;
@@ -252,9 +281,9 @@ onBeforeUnmount(() => {
 
 .calendar-nav-button:hover,
 .calendar-nav-button:focus-visible {
-  border-color: #b84d55;
-  background: #fff2ea;
-  box-shadow: 0 0 0 3px rgb(184 77 85 / 12%);
+  border-color: #eaded2;
+  background: var(--date-range-accent-hover);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--date-range-accent) 12%, transparent);
   transform: translateY(-1px);
 }
 
@@ -285,7 +314,7 @@ onBeforeUnmount(() => {
   background: transparent;
   color: #3d3832;
   font-family: inherit;
-  font-weight: 780;
+  font-weight: 700;
   transition:
     transform 0.16s ease,
     border-color 0.16s ease,
@@ -296,25 +325,25 @@ onBeforeUnmount(() => {
 
 .calendar-day:hover:not(:disabled),
 .calendar-day:focus-visible:not(:disabled) {
-  border-color: #b84d55;
-  background: #fff3ed;
-  box-shadow: 0 0 0 3px rgb(184 77 85 / 10%);
+  border-color: var(--date-range-accent);
+  background: var(--date-range-accent-hover);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--date-range-accent) 10%, transparent);
   transform: translateY(-1px);
 }
 
 .calendar-day.is-in-range {
   border-radius: 10px;
-  background: #fff0ea;
-  color: #8f3f47;
+  background: var(--date-range-accent-soft);
+  color: var(--date-range-accent);
 }
 
 .calendar-day.is-start,
 .calendar-day.is-end {
-  border-color: #b84d55;
+  border-color: var(--date-range-accent);
   border-radius: 999px;
-  background: #b84d55;
+  background: var(--date-range-accent);
   color: #fff;
-  box-shadow: 0 10px 22px rgb(184 77 85 / 24%);
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--date-range-accent) 24%, transparent);
 }
 
 .calendar-day.is-empty {
@@ -332,7 +361,7 @@ onBeforeUnmount(() => {
   gap: 3px;
   border: 1px solid #f0e2d6;
   border-radius: 12px;
-  background: #fff8ef;
+  background: var(--date-range-summary-background);
   color: #3d3832;
   padding: 10px 12px;
   font-size: 0.84rem;
@@ -340,7 +369,7 @@ onBeforeUnmount(() => {
 }
 
 .calendar-range-summary strong {
-  color: #8f3f47;
+  color: var(--date-range-accent);
   font-size: 0.74rem;
   font-weight: 800;
 }

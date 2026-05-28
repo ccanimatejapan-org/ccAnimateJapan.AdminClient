@@ -268,6 +268,11 @@ const toggleFilterSelect = (key, disabled = false) => {
   openFilterSelectKey.value = isFilterSelectOpen(key) ? '' : key
 }
 
+const selectPageSize = (size) => {
+  pagination.pageSize = Number(size)
+  openFilterSelectKey.value = ''
+}
+
 const toggleFilterType = (key, id) => {
   const nextValues = new Set(searchFilters[key])
   if (nextValues.has(id)) {
@@ -1076,12 +1081,24 @@ onBeforeUnmount(() => {
         <div class="activity-pagination-summary">{{ paginationSummary }}</div>
 
         <div class="activity-pagination-actions">
-          <label class="activity-page-size">
+          <div class="activity-page-size">
             <span>每頁</span>
-            <select v-model.number="pagination.pageSize">
-              <option v-for="size in pageSizeOptions" :key="size" :value="size">{{ size }}</option>
-            </select>
-          </label>
+            <CustomSelect
+              :label="String(pagination.pageSize)"
+              :open="isFilterSelectOpen('pageSize')"
+              @toggle="toggleFilterSelect('pageSize')"
+            >
+              <button
+                v-for="size in pageSizeOptions"
+                :key="size"
+                class="custom-select-option"
+                type="button"
+                @click="selectPageSize(size)"
+              >
+                {{ size }}
+              </button>
+            </CustomSelect>
+          </div>
 
           <AppButton pill :disabled="pagination.page <= 1" @click="goToPreviousPage">
             上一頁
@@ -1305,19 +1322,17 @@ onBeforeUnmount(() => {
   grid-column: 1 / -1;
 }
 
-.activity-filter-field input,
-.activity-page-size select {
+.activity-filter-field input {
   width: 100%;
   min-height: 44px;
-  border: 1px solid #e2d2c7;
+  border: 1px solid #eaded2;
   border-radius: 10px;
-  background: #fffaf4;
+  background: #fff8f0;
   color: #2a2825;
   padding: 0 12px;
 }
 
-.activity-filter-field input:focus,
-.activity-page-size select:focus {
+.activity-filter-field input:focus {
   border-color: #b84d55;
   box-shadow: 0 0 0 3px rgb(184 77 85 / 15%);
   outline: none;
@@ -1332,8 +1347,8 @@ onBeforeUnmount(() => {
 }
 
 .custom-select-checkbox-option.is-selected {
-  background: #f0faf4;
-  color: #1f6154;
+  background: var(--select-accent-soft);
+  color: var(--select-accent-text);
 }
 
 .custom-select-checkbox-option input {
@@ -1399,8 +1414,12 @@ onBeforeUnmount(() => {
   font-weight: 700;
 }
 
-.activity-page-size select {
+.activity-page-size :deep(.custom-select) {
   width: 84px;
+}
+
+.activity-page-size :deep(.custom-select-trigger) {
+  min-height: 44px;
 }
 
 .activity-page-indicator {
