@@ -71,6 +71,11 @@ const copyIconPaths = [
   'M8 8h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z',
   'M5 16H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1',
 ]
+const formLinkIconPaths = [
+  'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71',
+  'M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71',
+  'M8 12h8',
+]
 const productIconPaths = [
   'M5 10h14',
   'M6 10l1.2-5h9.6L18 10',
@@ -113,6 +118,9 @@ const isAnyDialogOpen = computed(
     isNoteDialogOpen.value ||
     isDeleteConfirmDialogOpen.value,
 )
+const webClientBaseUrl = (
+  import.meta.env.VITE_WEB_CLIENT_BASE_URL || 'https://cc-animate-japan-web-client.vercel.app'
+).replace(/\/+$/, '')
 
 const emptyForm = {
   activityStartDate: '',
@@ -697,6 +705,40 @@ const buildActivityFormData = (activityId = null) => {
   return formData
 }
 
+const buildActivityFormUrl = (activityId) =>
+  `${webClientBaseUrl}/activity/${encodeURIComponent(String(activityId))}`
+
+const copyTextToClipboard = async (text) => {
+  if (
+    typeof navigator !== 'undefined' &&
+    navigator.clipboard?.writeText &&
+    (typeof window === 'undefined' || window.isSecureContext)
+  ) {
+    await navigator.clipboard.writeText(text)
+    return
+  }
+
+  if (typeof document === 'undefined') {
+    throw new Error('Clipboard is unavailable')
+  }
+
+  const textArea = document.createElement('textarea')
+  textArea.value = text
+  textArea.setAttribute('readonly', '')
+  textArea.style.position = 'fixed'
+  textArea.style.opacity = '0'
+  document.body.appendChild(textArea)
+  textArea.focus()
+  textArea.select()
+
+  const wasCopied = document.execCommand('copy')
+  document.body.removeChild(textArea)
+
+  if (!wasCopied) {
+    throw new Error('Clipboard copy failed')
+  }
+}
+
 const saveActivity = async () => {
   if (!validateActivityForm()) {
     return
@@ -759,6 +801,23 @@ const copyActivity = async (activity) => {
     errorMessage.value = err.message || '複製活動失敗。'
   } finally {
     copyingActivityId.value = null
+  }
+}
+
+const copyActivityFormLink = async (activity) => {
+  if (!activity?.id) {
+    errorMessage.value = '找不到活動編號，無法複製前台表單連結。'
+    return
+  }
+
+  errorMessage.value = ''
+  statusMessage.value = ''
+
+  try {
+    await copyTextToClipboard(buildActivityFormUrl(activity.id))
+    statusMessage.value = '已複製前台表單連結。'
+  } catch {
+    errorMessage.value = '複製前台表單連結失敗，請確認瀏覽器允許剪貼簿權限。'
   }
 }
 
@@ -1061,6 +1120,7 @@ onBeforeUnmount(() => {
         :copying-activity-id="copyingActivityId"
         :edit-icon-paths="editIconPaths"
         :copy-icon-paths="copyIconPaths"
+        :form-link-icon-paths="formLinkIconPaths"
         :product-icon-paths="productIconPaths"
         :get-activity-type-name="getActivityTypeName"
         :get-animate-type-name="getAnimateTypeName"
@@ -1074,6 +1134,7 @@ onBeforeUnmount(() => {
         @open-note="openNoteDialog"
         @edit="openEditDialog"
         @copy="copyActivity"
+        @copy-form-link="copyActivityFormLink"
         @manage-products="openProductManagement"
       />
 

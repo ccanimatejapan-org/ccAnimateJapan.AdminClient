@@ -24,6 +24,10 @@ defineProps({
     type: Array,
     required: true,
   },
+  formLinkIconPaths: {
+    type: Array,
+    required: true,
+  },
   productIconPaths: {
     type: Array,
     required: true,
@@ -62,7 +66,7 @@ defineProps({
   },
 })
 
-defineEmits(['sort', 'open-note', 'edit', 'copy', 'manage-products'])
+defineEmits(['sort', 'open-note', 'edit', 'copy', 'copy-form-link', 'manage-products'])
 
 const getStatusBadgeClass = (status) => {
   const normalizedStatus = Number(status)
@@ -191,6 +195,21 @@ const getPreOrderBadgeClass = (activity) =>
                   <svg class="table-button-svg" viewBox="0 0 24 24" aria-hidden="true">
                     <path
                       v-for="path in copyIconPaths"
+                      :key="path"
+                      :d="path"
+                    />
+                  </svg>
+                </button>
+                <button
+                  class="table-action-button icon-action-button table-action-button--form-link"
+                  type="button"
+                  :aria-label="`複製${activity.name || '活動'}前台表單連結`"
+                  title="複製前台表單連結"
+                  @click="$emit('copy-form-link', activity)"
+                >
+                  <svg class="table-button-svg" viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      v-for="path in formLinkIconPaths"
                       :key="path"
                       :d="path"
                     />
@@ -521,6 +540,19 @@ const getPreOrderBadgeClass = (activity) =>
   border-color: #7d4d2f;
   background: #7d4d2f;
   box-shadow: 0 8px 18px rgb(159 106 69 / 16%);
+  color: #ffffff;
+}
+
+.table-action-button--form-link {
+  border-color: #cf3f49;
+  background: #cf3f49;
+  color: #ffffff;
+}
+
+.table-action-button--form-link:hover {
+  border-color: #a8323b;
+  background: #a8323b;
+  box-shadow: 0 8px 18px rgb(207 63 73 / 16%);
   color: #ffffff;
 }
 
