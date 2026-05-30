@@ -57,6 +57,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  isPreOrderActivity: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 defineEmits(['close', 'submit', 'image-change', 'remove-existing-image', 'remove-new-image'])
@@ -139,6 +143,15 @@ const selectProductType = (productTypeId) => {
             :readonly="Boolean(editingProductId)"
           />
           <small v-if="editingProductId" class="stock-help">庫存數量請於庫存管理進行異動。</small>
+        </FormField>
+        <FormField v-if="isPreOrderActivity" as="div" label="庫存狀態" soft>
+          <label class="stock-status-switch">
+            <input v-model="form.isOutStock" type="checkbox" />
+            <span class="stock-status-switch-track" aria-hidden="true">
+              <span class="stock-status-switch-thumb"></span>
+            </span>
+            <span class="stock-status-switch-text">{{ form.isOutStock ? '缺貨' : '尚有庫存' }}</span>
+          </label>
         </FormField>
         <FormField as="div" label="商品圖片（最多 5 張）" full soft>
           <ProductImagePicker
@@ -243,6 +256,66 @@ const selectProductType = (productTypeId) => {
   color: #5e786f;
   font-size: 0.78rem;
   font-weight: 650;
+}
+
+.stock-status-switch {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #d8e6de;
+  border-radius: 10px;
+  background: #f8fcfa;
+  padding: 0 13px;
+}
+
+.stock-status-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.stock-status-switch-track {
+  position: relative;
+  display: inline-flex;
+  width: 46px;
+  height: 26px;
+  flex: 0 0 auto;
+  align-items: center;
+  border-radius: 999px;
+  background: #dce5df;
+  transition: background 0.18s ease;
+}
+
+.stock-status-switch-thumb {
+  position: absolute;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 3px 8px rgb(19 32 28 / 18%);
+  transition: transform 0.18s ease;
+}
+
+.stock-status-switch input:checked + .stock-status-switch-track {
+  background: #b84d55;
+}
+
+.stock-status-switch input:checked + .stock-status-switch-track .stock-status-switch-thumb {
+  transform: translateX(20px);
+}
+
+.stock-status-switch input:focus-visible + .stock-status-switch-track {
+  box-shadow: 0 0 0 3px rgb(184 77 85 / 15%);
+}
+
+.stock-status-switch-text {
+  color: #384942;
+  font-weight: 800;
 }
 
 .dialog-actions {

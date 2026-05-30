@@ -62,6 +62,7 @@ const activityKindText = computed(() =>
   selectedActivity.value ? (selectedActivity.value.isPreOrder ? '預購' : '現貨') : '',
 )
 const isSpotActivity = computed(() => selectedActivity.value?.isPreOrder === false)
+const isPreOrderActivity = computed(() => selectedActivity.value?.isPreOrder === true)
 
 const isDialogOpen = ref(false)
 const editingProductId = ref(null)
@@ -93,6 +94,7 @@ const emptyForm = {
   saleRate: 0.24,
   price: 0,
   amount: 0,
+  isOutStock: false,
   productTypeId: 1,
   info: '',
 }
@@ -425,6 +427,10 @@ const buildProductPayload = () => {
     info: sanitizeHtml(form.info).trim(),
   }
 
+  if (isPreOrderActivity.value) {
+    payload.isOutStock = form.isOutStock === true
+  }
+
   if (!editingProductId.value) {
     payload.amount = isSpotActivity.value ? Math.max(0, toNumber(form.amount)) : 0
   }
@@ -643,6 +649,7 @@ const openEditDialog = (product) => {
     saleRate: getSaleRateFromProduct(product),
     price: product.price,
     amount: product.amount,
+    isOutStock: product.isOutStock === true,
     productTypeId: product.productTypeId || getDefaultProductTypeId(),
     info: product.info || '',
   })
@@ -1013,6 +1020,7 @@ watch(isAnyDialogOpen, setDialogScrollLock, { immediate: true })
       :remaining-image-slots="remainingProductImageSlots"
       :image-limit="productImageLimit"
       :is-spot-activity="isSpotActivity"
+      :is-pre-order-activity="isPreOrderActivity"
       @close="closeDialog"
       @submit="saveProduct"
       @image-change="handleProductImageChange"
