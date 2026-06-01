@@ -87,7 +87,7 @@ const createEmptyOrderItem = () => ({
 const createEmptyOrderForm = () => ({
   subscriberName: '',
   subscriberEmail: '',
-  subscriberPhone: '',
+  subscriberBank: '',
   deliveryTypeId: '',
   orderStatus: 1,
   paymentStatus: 1,
@@ -124,7 +124,7 @@ const deliveryStatusOptions = DELIVERY_STATUS_OPTIONS
 const orderColumns = [
   { key: 'id', label: '訂單', sortable: true, getValue: (order) => Number(order.id || 0) },
   { key: 'subscriberName', label: '訂購人', sortable: true, getValue: (order) => order.subscriberName || '' },
-  { key: 'subscriberPhone', label: '電話', sortable: true, getValue: (order) => order.subscriberPhone || '' },
+  { key: 'subscriberBank', label: '帳號後五碼', sortable: true, getValue: (order) => order.subscriberBank || '' },
   { key: 'total', label: '金額', sortable: true, getValue: (order) => Number(order.total || 0) },
   { key: 'orderStatus', label: '訂單狀態', sortable: true, getValue: (order) => Number(order.orderStatus || 0) },
   { key: 'createdAt', label: '建立時間', sortable: true, getValue: (order) => new Date(order.createdAt || 0) },
@@ -390,7 +390,7 @@ const openEditOrder = async (order) => {
     orderForm.value = {
       subscriberName: detail.subscriberName || '',
       subscriberEmail: detail.subscriberEmail || '',
-      subscriberPhone: detail.subscriberPhone || '',
+      subscriberBank: detail.subscriberBank || '',
       deliveryTypeId: detail.deliveryType?.id || '',
       orderStatus: detail.orderStatus || 1,
       paymentStatus: detail.paymentStatus || 1,
@@ -430,7 +430,7 @@ const buildBaseOrderPayload = () => ({
   activityId: Number(selectedActivityId.value),
   subscriberName: orderForm.value.subscriberName.trim(),
   subscriberEmail: orderForm.value.subscriberEmail.trim(),
-  subscriberPhone: orderForm.value.subscriberPhone.trim(),
+  subscriberBank: orderForm.value.subscriberBank.trim(),
   deliveryTypeId: Number(orderForm.value.deliveryTypeId),
   items: orderForm.value.items.map((item) => ({
     productId: Number(item.productId),
@@ -456,7 +456,7 @@ const validateOrderForm = () => {
   if (!hasPositiveNumberValue(selectedActivityId.value)) missingFields.push('活動')
   if (isBlankValue(currentForm.subscriberName)) missingFields.push('訂購人')
   if (isBlankValue(currentForm.subscriberEmail)) missingFields.push('Email')
-  if (isBlankValue(currentForm.subscriberPhone)) missingFields.push('電話')
+  if (isBlankValue(currentForm.subscriberBank)) missingFields.push('帳號後五碼')
   if (!hasPositiveNumberValue(currentForm.deliveryTypeId)) missingFields.push('配送方式')
 
   if (editingOrderId.value) {
@@ -749,7 +749,7 @@ onMounted(async () => {
               <tr v-for="order in pagedOrders" :key="order.id">
                 <td>#{{ order.id }}</td>
                 <td>{{ order.subscriberName }}</td>
-                <td>{{ order.subscriberPhone }}</td>
+                <td>{{ order.subscriberBank }}</td>
                 <td>{{ formatCurrency(order.total) }}</td>
                 <td>
                   <span class="status-chip">{{ getOrderStatusLabel(order.orderStatus) }}</span>
@@ -850,8 +850,8 @@ onMounted(async () => {
               <dd>{{ selectedOrder.subscriberEmail }}</dd>
             </div>
             <div>
-              <dt>電話</dt>
-              <dd>{{ selectedOrder.subscriberPhone }}</dd>
+              <dt>帳號後五碼</dt>
+              <dd>{{ selectedOrder.subscriberBank }}</dd>
             </div>
             <div>
               <dt>配送方式</dt>

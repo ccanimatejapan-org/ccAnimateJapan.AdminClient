@@ -109,8 +109,8 @@ const getProductLabel = (item) => {
         </label>
 
         <label class="order-form-field">
-          <span>電話</span>
-          <input v-model="props.form.subscriberPhone" required />
+          <span>帳號後五碼</span>
+          <input v-model="props.form.subscriberBank" required />
         </label>
 
         <div class="form-field">
