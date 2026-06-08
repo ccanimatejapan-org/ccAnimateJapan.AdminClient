@@ -1,5 +1,10 @@
+<script setup>
+import GlobalLoadingOverlay from '@/components/ui/GlobalLoadingOverlay.vue'
+</script>
+
 <template>
   <router-view />
+  <GlobalLoadingOverlay />
 </template>
 
 <style>
@@ -29,6 +34,10 @@ body {
 }
 
 body.dialog-scroll-locked {
+  overflow: hidden;
+}
+
+body.global-loading-locked {
   overflow: hidden;
 }
 

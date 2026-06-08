@@ -1,5 +1,5 @@
 import { getAdminToken } from '@/stores/authSession'
-import { apiBase, apiGet, apiPost } from './http'
+import { apiBlob, apiGet, apiPost } from './http'
 
 const authHeaders = () => {
   const token = getAdminToken()
@@ -16,26 +16,6 @@ const toQueryString = (params) => {
 
   const query = searchParams.toString()
   return query ? `?${query}` : ''
-}
-
-const parseJsonResponse = async (resp) => {
-  try {
-    return await resp.json()
-  } catch (_) {
-    return null
-  }
-}
-
-const getDownloadFileName = (resp, fallback) => {
-  const disposition = resp.headers.get('content-disposition') || ''
-  const encodedMatch = disposition.match(/filename\*=UTF-8''([^;]+)/i)
-
-  if (encodedMatch?.[1]) {
-    return decodeURIComponent(encodedMatch[1].replace(/"/g, ''))
-  }
-
-  const fileNameMatch = disposition.match(/filename="?([^"]+)"?/i)
-  return fileNameMatch?.[1] || fallback
 }
 
 export const listOrderActivities = async () => {
@@ -170,29 +150,10 @@ export const getOrderDetail = async (orderId) => {
   return response?.data || null
 }
 
-export const downloadOrderPdf = async (orderId) => {
-  const fallbackFileName = `order-${orderId}.pdf`
-  const resp = await fetch(`${apiBase}/api/orders/${orderId}/pdf`, {
-    method: 'GET',
-    headers: {
-      Accept: 'application/pdf',
-      ...authHeaders(),
-    }
+export const downloadOrderPdf = (orderId) =>
+  apiBlob(`/api/orders/${orderId}/pdf`, {
+    accept: 'application/pdf',
+    expectContentType: 'application/pdf',
+    fallbackFileName: `order-${orderId}.pdf`,
+    headers: authHeaders(),
   })
-
-  const contentType = resp.headers.get('content-type') || ''
-  if (!resp.ok || !contentType.includes('application/pdf')) {
-    const data = await parseJsonResponse(resp)
-    const responseStatus = data?.status ? Number(data.status) : resp.status
-    const message = data?.message || `Request failed (${responseStatus || resp.status})`
-    const err = new Error(message)
-    err.status = responseStatus || resp.status
-    err.responseData = data
-    throw err
-  }
-
-  return {
-    blob: await resp.blob(),
-    fileName: getDownloadFileName(resp, fallbackFileName),
-  }
-}
