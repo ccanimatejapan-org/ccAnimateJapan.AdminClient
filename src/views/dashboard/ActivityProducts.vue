@@ -413,10 +413,6 @@ const resetForm = () => {
   editingProductId.value = null
 }
 
-const updatePriceFromSaleRate = () => {
-  form.price = Math.round(toNumber(form.japanCost) * toNumber(form.saleRate))
-}
-
 const buildProductPayload = () => {
   const payload = {
     name: form.name.trim(),
@@ -752,11 +748,6 @@ watch(
   () => {
     saveActivityRateDefaults()
   },
-)
-
-watch(
-  () => [form.japanCost, form.saleRate],
-  updatePriceFromSaleRate,
 )
 
 watch(

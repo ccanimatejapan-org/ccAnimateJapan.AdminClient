@@ -7,6 +7,7 @@ import FormField from '@/components/ui/FormField.vue'
 import IconButton from '@/components/ui/IconButton.vue'
 import MessageBlock from '@/components/ui/MessageBlock.vue'
 import ProductImagePicker from './ProductImagePicker.vue'
+import { toNumber } from '@/utils/products/productMapper'
 
 const props = defineProps({
   form: {
@@ -87,6 +88,23 @@ const selectProductType = (productTypeId) => {
   props.form.productTypeId = Number(productTypeId)
   isProductTypeSelectOpen.value = false
 }
+
+// 售價(price) 與 售價匯率(saleRate) 以 成本(japanCost) 為橋樑雙向連動。
+// 只在使用者實際輸入時觸發，回寫的是「另一個」欄位，避免迴圈與輸入抖動。
+const onJapanCostInput = (event) => {
+  props.form.price = Math.round(toNumber(event.target.value) * toNumber(props.form.saleRate))
+}
+
+const onSaleRateInput = (event) => {
+  props.form.price = Math.round(toNumber(props.form.japanCost) * toNumber(event.target.value))
+}
+
+const onPriceInput = (event) => {
+  const japanCost = toNumber(props.form.japanCost)
+  if (japanCost <= 0) return
+
+  props.form.saleRate = Number((toNumber(event.target.value) / japanCost).toFixed(4))
+}
 </script>
 
 <template>
@@ -104,16 +122,16 @@ const selectProductType = (productTypeId) => {
           <input v-model="form.name" required placeholder="商品名稱" />
         </FormField>
         <FormField label="成本(日)" soft>
-          <input v-model.number="form.japanCost" min="0" type="number" required />
+          <input v-model.number="form.japanCost" min="0" type="number" required @input="onJapanCostInput" />
         </FormField>
         <FormField label="成本匯率" soft>
           <input v-model.number="form.rate" min="0" step="0.0001" type="number" required />
         </FormField>
         <FormField label="售價匯率" soft>
-          <input v-model.number="form.saleRate" min="0" step="0.0001" type="number" required />
+          <input v-model.number="form.saleRate" min="0" step="0.0001" type="number" required @input="onSaleRateInput" />
         </FormField>
         <FormField label="售價(台)" soft>
-          <input v-model.number="form.price" min="0" type="number" required readonly />
+          <input v-model.number="form.price" min="0" type="number" required @input="onPriceInput" />
         </FormField>
         <FormField as="div" label="商品類型">
           <CustomSelect
