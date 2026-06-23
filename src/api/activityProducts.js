@@ -46,3 +46,8 @@ export const updateActivityProduct = (activityId, payload) =>
   isFormData(payload)
     ? apiPostForm(`/api/activities/${activityId}/products/update`, payload, { headers: authHeaders() })
     : apiPost(`/api/activities/${activityId}/products/update`, payload, { headers: authHeaders() })
+
+export const copyActivityProduct = (activityId, productId) =>
+  apiPost(`/api/activities/${activityId}/products/${productId}/copy`, undefined, {
+    headers: authHeaders(),
+  })

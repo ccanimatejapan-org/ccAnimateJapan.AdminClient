@@ -6,6 +6,10 @@ const editIconPaths = [
   'M12 20h9',
   'M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z',
 ]
+const copyIconPaths = [
+  'M8 8h10v12H8z',
+  'M6 16H4V4h10v2',
+]
 
 const getProductImages = (product) =>
   Array.isArray(product.images)
@@ -88,7 +92,7 @@ const props = defineProps({
 const hasActionsColumn = computed(() => props.columns.some((column) => column.key === 'actions'))
 const tableColspan = computed(() => Math.max(props.columns.length, 1))
 
-defineEmits(['sort', 'open-note', 'edit', 'stock-in', 'stock-out', 'stock-history'])
+defineEmits(['sort', 'open-note', 'edit', 'copy', 'stock-in', 'stock-out', 'stock-history'])
 
 const getProductTypeName = (productTypeId) => {
   const normalizedProductTypeId = Number(productTypeId)
@@ -224,6 +228,21 @@ const getProductTypeName = (productTypeId) => {
                   <svg class="table-button-svg" viewBox="0 0 24 24" aria-hidden="true">
                     <path
                       v-for="path in editIconPaths"
+                      :key="path"
+                      :d="path"
+                    />
+                  </svg>
+                </button>
+                <button
+                  class="table-action-button icon-action-button table-action-button--copy"
+                  type="button"
+                  :aria-label="`複製${product.name || '商品'}`"
+                  title="複製商品"
+                  @click="$emit('copy', product)"
+                >
+                  <svg class="table-button-svg" viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      v-for="path in copyIconPaths"
                       :key="path"
                       :d="path"
                     />
@@ -502,6 +521,7 @@ const getProductTypeName = (productTypeId) => {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
 }
 
 .table-actions--stock {
@@ -541,6 +561,18 @@ const getProductTypeName = (productTypeId) => {
   background: #1f6154;
   box-shadow: 0 8px 18px rgb(39 120 103 / 16%);
   color: #ffffff;
+}
+
+.table-action-button--copy {
+  border-color: #d8e6de;
+  background: #f2faf5;
+  color: #1f6154;
+}
+
+.table-action-button--copy:hover {
+  border-color: #277867;
+  background: #e7f5ec;
+  color: #1f6154;
 }
 
 .table-action-button--stock-in {

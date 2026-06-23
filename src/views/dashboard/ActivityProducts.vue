@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getActivityById } from '@/api/activities'
 import {
+  copyActivityProduct,
   createActivityProduct,
   downloadActivityProductsPdf,
   listActivityProducts,
@@ -70,6 +71,7 @@ const products = ref([])
 const isLoading = ref(false)
 const isSaving = ref(false)
 const isDownloadingPdf = ref(false)
+const copyingProductId = ref(null)
 const productTypes = ref([])
 const isLoadingProductTypes = ref(false)
 const productTypeErrorMessage = ref('')
@@ -718,6 +720,40 @@ const saveProduct = async () => {
   }
 }
 
+const copyProduct = async (product) => {
+  if (copyingProductId.value) return
+
+  if (!activityId.value || !product?.id) {
+    errorMessage.value = '商品資料無效，無法複製商品。'
+    return
+  }
+
+  if (!getAdminToken()) {
+    errorMessage.value = '登入狀態已失效，請重新登入後再複製商品。'
+    return
+  }
+
+  copyingProductId.value = product.id
+  errorMessage.value = ''
+  statusMessage.value = ''
+
+  try {
+    const response = await copyActivityProduct(activityId.value, product.id)
+    const copiedProduct = {
+      ...mapProductFromApi(response?.data, activityId.value),
+      activityName: activityName.value,
+      isPreOrder: selectedActivity.value?.isPreOrder === true,
+    }
+
+    products.value.unshift(copiedProduct)
+    statusMessage.value = '複製商品成功。'
+  } catch (err) {
+    errorMessage.value = err.message || '複製商品失敗。'
+  } finally {
+    copyingProductId.value = null
+  }
+}
+
 const loadPage = async () => {
   await loadActivity()
   await Promise.all([loadProductTypes(), loadProducts()])
@@ -960,6 +996,7 @@ watch(isAnyDialogOpen, setDialogScrollLock, { immediate: true })
         @sort="toggleProductSort"
         @open-note="openNoteDialog"
         @edit="openEditDialog"
+        @copy="copyProduct"
       />
 
       <div class="activity-pagination" aria-label="商品分頁">
