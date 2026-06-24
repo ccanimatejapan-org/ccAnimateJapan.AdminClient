@@ -115,9 +115,22 @@ const selectedActivity = computed(() =>
   activities.value.find((activity) => Number(activity.activityId) === Number(selectedActivityId.value)) || null,
 )
 
-const isActivityEnded = (activity) => Number(activity?.status) === ActivityEnum.Ended
+// 只有「準備中 / 進行中」可下單；其餘狀態（準備結束、已結束…）僅在有訂單時列出，且唯讀
+const ORDERABLE_ACTIVITY_STATUSES = [ActivityEnum.Preparing, ActivityEnum.Started]
 
-const selectedActivityEnded = computed(() => isActivityEnded(selectedActivity.value))
+const READONLY_ACTIVITY_STATUS_LABELS = {
+  [ActivityEnum.NotStarted]: '尚未開始',
+  [ActivityEnum.PreparationEnded]: '準備結束',
+  [ActivityEnum.Ended]: '已結束',
+}
+
+const isActivityReadOnly = (activity) =>
+  activity != null && !ORDERABLE_ACTIVITY_STATUSES.includes(Number(activity?.status))
+
+const getActivityStatusBadge = (activity) =>
+  READONLY_ACTIVITY_STATUS_LABELS[Number(activity?.status)] || ''
+
+const selectedActivityReadOnly = computed(() => isActivityReadOnly(selectedActivity.value))
 
 const getActivityKindText = (activity) => (activity?.isPreOrder ? '預購' : '現貨')
 
@@ -387,8 +400,8 @@ const openCreateOrder = () => {
     return
   }
 
-  if (selectedActivityEnded.value) {
-    errorMessage.value = '活動已結束，無法新增訂單'
+  if (selectedActivityReadOnly.value) {
+    errorMessage.value = '此活動非進行中，無法新增訂單'
     return
   }
 
@@ -638,7 +651,7 @@ onMounted(async () => {
               class="activity-item"
               :class="{
                 'activity-item--active': Number(activity.activityId) === Number(selectedActivityId),
-                'activity-item--ended': isActivityEnded(activity),
+                'activity-item--readonly': isActivityReadOnly(activity),
               }"
               @click="selectActivity(activity.activityId)"
             >
@@ -666,10 +679,10 @@ onMounted(async () => {
                   {{ getActivityKindText(activity) }}
                 </span>
                 <span
-                  v-if="isActivityEnded(activity)"
-                  class="activity-status-badge activity-status-badge--ended"
+                  v-if="isActivityReadOnly(activity)"
+                  class="activity-status-badge activity-status-badge--readonly"
                 >
-                  已結束
+                  {{ getActivityStatusBadge(activity) }}
                 </span>
               </span>
               <span class="activity-time">
@@ -719,8 +732,8 @@ onMounted(async () => {
               class="add-order-button"
               type="button"
               aria-label="新增訂單"
-              :title="selectedActivityEnded ? '活動已結束，無法新增訂單' : '新增訂單'"
-              :disabled="!selectedActivityId || selectedActivityEnded"
+              :title="selectedActivityReadOnly ? '此活動非進行中，無法新增訂單' : '新增訂單'"
+              :disabled="!selectedActivityId || selectedActivityReadOnly"
               @click="openCreateOrder"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1242,13 +1255,13 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
-.activity-status-badge--ended {
+.activity-status-badge--readonly {
   border: 1px solid #d9c4b3;
   background: #efe7df;
   color: #7a6855;
 }
 
-.activity-item--ended .activity-image {
+.activity-item--readonly .activity-image {
   filter: grayscale(0.35);
 }
 
