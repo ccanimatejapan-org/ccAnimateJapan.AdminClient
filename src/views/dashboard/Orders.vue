@@ -17,7 +17,7 @@ import OrderFormDialog from '@/components/orders/OrderFormDialog.vue'
 import PageHeading from '@/components/layout/PageHeading.vue'
 import PageShell from '@/components/layout/PageShell.vue'
 import MessageBlock from '@/components/ui/MessageBlock.vue'
-import { toDisplayDateTime } from '@/utils/activities/activityMapper'
+import { ActivityEnum, toDisplayDateTime } from '@/utils/activities/activityMapper'
 import {
   DELIVERY_STATUS_OPTIONS,
   ORDER_STATUS_FILTER_OPTIONS,
@@ -53,6 +53,7 @@ const mailIconPaths = [
 
 const activities = ref([])
 const selectedActivityId = ref('')
+const expandedActivityId = ref('')
 const deliveryTypes = ref([])
 const products = ref([])
 const orders = ref([])
@@ -113,6 +114,10 @@ const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value |
 const selectedActivity = computed(() =>
   activities.value.find((activity) => Number(activity.activityId) === Number(selectedActivityId.value)) || null,
 )
+
+const isActivityEnded = (activity) => Number(activity?.status) === ActivityEnum.Ended
+
+const selectedActivityEnded = computed(() => isActivityEnded(selectedActivity.value))
 
 const getActivityKindText = (activity) => (activity?.isPreOrder ? '預購' : '現貨')
 
@@ -288,6 +293,7 @@ const loadActivities = async () => {
   try {
     activities.value = await listOrderActivities()
     selectedActivityId.value = activities.value[0]?.activityId || ''
+    expandedActivityId.value = selectedActivityId.value
   } catch (err) {
     errorMessage.value = err?.message || '活動資料載入失敗'
   } finally {
@@ -337,7 +343,18 @@ const loadOrders = async () => {
 }
 
 const selectActivity = (activityId) => {
+  const isExpanded =
+    expandedActivityId.value !== '' &&
+    Number(expandedActivityId.value) === Number(activityId)
+
+  // 點選已展開的活動 → 收起商品（保留選取狀態，右側訂單不變），方便快速切換其他活動
+  if (isExpanded) {
+    expandedActivityId.value = ''
+    return
+  }
+
   selectedActivityId.value = activityId
+  expandedActivityId.value = activityId
 }
 
 const resetFilters = () => {
@@ -367,6 +384,11 @@ const openOrderDetail = async (orderId) => {
 const openCreateOrder = () => {
   if (!selectedActivityId.value) {
     errorMessage.value = '請先選擇活動'
+    return
+  }
+
+  if (selectedActivityEnded.value) {
+    errorMessage.value = '活動已結束，無法新增訂單'
     return
   }
 
@@ -602,45 +624,76 @@ onMounted(async () => {
         </div>
 
         <MessageBlock v-if="!isLoadingActivities && activities.length === 0" tone="empty">
-          目前沒有進行中的活動
+          目前沒有可顯示的活動
         </MessageBlock>
 
         <div class="activity-list">
-          <button
+          <div
             v-for="activity in activities"
             :key="activity.activityId"
-            type="button"
-            class="activity-item"
-            :class="{ 'activity-item--active': Number(activity.activityId) === Number(selectedActivityId) }"
-            @click="selectActivity(activity.activityId)"
+            class="activity-group"
           >
-            <img
-              class="activity-image"
-              :src="activity.imageUrl || '/cc-admin-mark.svg'"
-              alt=""
-            />
-            <span class="activity-name">{{ activity.activityName || `#${activity.activityId}` }}</span>
-            <span
-              class="activity-kind-badge"
-              :class="{ 'activity-kind-badge--preorder': activity.isPreOrder }"
+            <button
+              type="button"
+              class="activity-item"
+              :class="{
+                'activity-item--active': Number(activity.activityId) === Number(selectedActivityId),
+                'activity-item--ended': isActivityEnded(activity),
+              }"
+              @click="selectActivity(activity.activityId)"
             >
-              {{ getActivityKindText(activity) }}
-            </span>
-            <span class="activity-time">
-              {{ toDisplayDateTime(activity.activeStartTime) }} - {{ toDisplayDateTime(activity.activeEndTime) }}
-            </span>
-          </button>
-        </div>
+              <img
+                class="activity-image"
+                :src="activity.imageUrl || '/cc-admin-mark.svg'"
+                alt=""
+              />
+              <span class="activity-name-row">
+                <span class="activity-name">{{ activity.activityName || `#${activity.activityId}` }}</span>
+                <svg
+                  class="activity-caret"
+                  :class="{ 'activity-caret--open': Number(activity.activityId) === Number(expandedActivityId) }"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </span>
+              <span class="activity-badges">
+                <span
+                  class="activity-kind-badge"
+                  :class="{ 'activity-kind-badge--preorder': activity.isPreOrder }"
+                >
+                  {{ getActivityKindText(activity) }}
+                </span>
+                <span
+                  v-if="isActivityEnded(activity)"
+                  class="activity-status-badge activity-status-badge--ended"
+                >
+                  已結束
+                </span>
+              </span>
+              <span class="activity-time">
+                {{ toDisplayDateTime(activity.activeStartTime) }} - {{ toDisplayDateTime(activity.activeEndTime) }}
+              </span>
+            </button>
 
-        <div v-if="selectedActivity" class="product-summary">
-          <div class="panel-title panel-title--compact">
-            <h2>可訂購商品</h2>
-            <span>{{ products.length }}</span>
-          </div>
-          <div class="product-list">
-            <div v-for="product in products" :key="product.productId" class="product-row">
-              <span>{{ product.name || `#${product.productId}` }}</span>
-              <strong>{{ formatCurrency(product.price) }}</strong>
+            <div
+              v-if="Number(activity.activityId) === Number(expandedActivityId)"
+              class="product-summary"
+            >
+              <div class="panel-title panel-title--compact">
+                <h2>可訂購商品</h2>
+                <span>{{ products.length }}</span>
+              </div>
+              <div class="product-list">
+                <div v-for="product in products" :key="product.productId" class="product-row">
+                  <span>{{ product.name || `#${product.productId}` }}</span>
+                  <strong>{{ formatCurrency(product.price) }}</strong>
+                </div>
+                <MessageBlock v-if="products.length === 0" tone="empty">
+                  此活動沒有可訂購商品
+                </MessageBlock>
+              </div>
             </div>
           </div>
         </div>
@@ -666,8 +719,8 @@ onMounted(async () => {
               class="add-order-button"
               type="button"
               aria-label="新增訂單"
-              title="新增訂單"
-              :disabled="!selectedActivityId"
+              :title="selectedActivityEnded ? '活動已結束，無法新增訂單' : '新增訂單'"
+              :disabled="!selectedActivityId || selectedActivityEnded"
               @click="openCreateOrder"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -1082,6 +1135,18 @@ onMounted(async () => {
   gap: 10px;
 }
 
+.activity-group {
+  display: grid;
+  gap: 8px;
+}
+
+.activity-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
 .activity-item {
   display: grid;
   grid-template-columns: 54px minmax(0, 1fr);
@@ -1108,11 +1173,36 @@ onMounted(async () => {
   object-fit: cover;
 }
 
+.activity-name-row {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
 .activity-name {
   overflow: hidden;
+  flex: 1;
+  min-width: 0;
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.activity-caret {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: #9a6a3a;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.18s ease;
+}
+
+.activity-caret--open {
+  transform: rotate(180deg);
 }
 
 .activity-kind-badge {
@@ -1138,6 +1228,30 @@ onMounted(async () => {
   color: #334c9f;
 }
 
+.activity-status-badge {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 900;
+  line-height: 1;
+  padding: 4px 9px;
+  white-space: nowrap;
+}
+
+.activity-status-badge--ended {
+  border: 1px solid #d9c4b3;
+  background: #efe7df;
+  color: #7a6855;
+}
+
+.activity-item--ended .activity-image {
+  filter: grayscale(0.35);
+}
+
 .activity-time {
   color: #59665f;
   font-size: 0.82rem;
@@ -1147,8 +1261,12 @@ onMounted(async () => {
 .product-summary {
   display: grid;
   gap: 10px;
-  border-top: 1px solid #eaded2;
-  padding-top: 14px;
+  margin: 0 0 2px 14px;
+  border: 1px solid #eaded2;
+  border-left: 3px solid #c48445;
+  border-radius: 8px;
+  background: #fffaf4;
+  padding: 12px;
 }
 
 .product-row {
