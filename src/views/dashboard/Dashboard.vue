@@ -29,6 +29,11 @@ const iconPaths = {
     'M19 19v-8',
     'M3 19h18',
   ],
+  art: [
+    'M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z',
+    'M3 16l5-4 4 3 3-2 6 5',
+    'M9 10a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z',
+  ],
 }
 
 const modules = [
@@ -37,6 +42,12 @@ const modules = [
     icon: 'calendar',
     accent: '#b84d55',
     path: '/activities',
+  },
+  {
+    title: '作品管理',
+    icon: 'art',
+    accent: '#7a5bb0',
+    path: '/animate-types',
   },
   {
     title: '庫存管理',

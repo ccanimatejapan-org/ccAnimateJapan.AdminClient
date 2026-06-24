@@ -1,6 +1,6 @@
 # ccAnimateJapan.AdminClient
 
-後台 Vue 3 管理介面。功能包含活動/商品、庫存異動與不分活動的訂單管理。
+後台 Vue 3 管理介面。功能包含活動/商品、作品（動漫種類 animateType）管理、庫存異動與不分活動的訂單管理。
 
 ## Data Rules
 

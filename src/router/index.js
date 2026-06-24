@@ -48,6 +48,11 @@ const routes = [
         }),
       },
       {
+        path: '/animate-types',
+        name: 'AnimateTypes',
+        component: () => import('@/views/dashboard/AnimateTypes.vue'),
+      },
+      {
         path: '/inventory',
         name: 'Inventory',
         component: () => import('@/views/dashboard/Inventory.vue'),

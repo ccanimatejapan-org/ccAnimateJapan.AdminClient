@@ -62,6 +62,7 @@ src/
 - `components/layout`：頁面容器與 panel，例如 PageShell、PanelCard。
 - `components/activities`：活動管理相關元件。
 - `components/products`：商品管理相關元件。
+- `components/animateTypes`：作品（動漫種類 animateType）管理相關元件，例如圖片上傳選擇器 `AnimateTypeImagePicker`。
 - `components/dashboard`：Dashboard 模組卡片。
 - `components/inventory`：庫存頁表格。
 - `components/activities/CustomSelect.vue`：全站共用下拉式選單；以 `tone` 套用活動、商品、庫存或訂單模組色。

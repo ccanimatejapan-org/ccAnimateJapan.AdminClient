@@ -31,6 +31,12 @@ export const listAnimateTypes = async () => {
   return response?.data || []
 }
 
+export const createAnimateType = async (formData) =>
+  apiPostForm('/api/activities/animate-types', formData, { headers: authHeaders() })
+
+export const updateAnimateType = async (formData) =>
+  apiPostForm('/api/activities/animate-types/update', formData, { headers: authHeaders() })
+
 export const createActivity = async (formData) =>
   apiPostForm('/api/activities', formData, { headers: authHeaders() })
 
