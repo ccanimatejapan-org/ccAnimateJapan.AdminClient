@@ -65,6 +65,7 @@ const modules = [
     title: '報表分析',
     icon: 'chart',
     accent: '#5468a6',
+    path: '/reports',
   },
 ]
 
