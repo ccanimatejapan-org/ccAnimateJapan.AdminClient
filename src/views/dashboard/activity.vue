@@ -658,7 +658,7 @@ const validateActivityForm = () => {
     missingFields.push('活動時間')
   }
 
-  if (isBlankValue(form.prepStartDate) || isBlankValue(form.prepEndDate)) {
+  if (!form.isPreOrder && (isBlankValue(form.prepStartDate) || isBlankValue(form.prepEndDate))) {
     missingFields.push('準備時間')
   }
 
@@ -688,8 +688,10 @@ const buildActivityFormData = (activityId = null) => {
   appendIfValue(formData, 'name', form.name.trim())
   appendIfValue(formData, 'activeStartTime', dateTimeToIso(form.activityStartDate))
   appendIfValue(formData, 'activeEndTime', dateTimeToIso(form.activityEndDate))
-  appendIfValue(formData, 'prepareStartTime', dateTimeToIso(form.prepStartDate))
-  appendIfValue(formData, 'prepareEndTime', dateTimeToIso(form.prepEndDate))
+  if (!form.isPreOrder) {
+    appendIfValue(formData, 'prepareStartTime', dateTimeToIso(form.prepStartDate))
+    appendIfValue(formData, 'prepareEndTime', dateTimeToIso(form.prepEndDate))
+  }
   appendIfValue(formData, 'address', form.address.trim())
   appendIfValue(formData, 'activityTypeId', form.activityTypeId)
   appendIfValue(formData, 'animateTypeId', form.animateTypeId)

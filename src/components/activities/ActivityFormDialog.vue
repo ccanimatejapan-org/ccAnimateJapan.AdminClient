@@ -167,6 +167,7 @@ defineEmits([
           @close="$emit('close-range')"
         />
         <DateRangePicker
+          v-if="!form.isPreOrder"
           label="準備期間"
           :open="isRangeOpen('prep')"
           :range-label="getPrepRangeLabel()"
