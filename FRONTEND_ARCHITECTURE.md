@@ -1,254 +1,93 @@
 # 前端架構說明
 
-本專案前端使用 Vue 3 + Vite。架構目標是讓頁面負責流程、API 負責資料交換、components 負責畫面、composables 負責可重用狀態邏輯、utils 負責純函式。
+本專案前端使用 **Vue 3（Composition API）+ Vite + Pinia + axios**，採**功能模組（feature-module）架構**：每個功能放在 `src/modules/{feature}/`，跨模組共用的平台程式放在 `src/shared/`。
+
+> 架構目標：每個東西都有明確的家。頁面只負責「流程編排（orchestration）」，可重用狀態邏輯放 composable、純資料轉換放 util、畫面放 component、API 交換放 api、樣式放 scss。**避免再出現上千行的單一頁面檔。**
 
 ## 目錄總覽
 
 ```text
 src/
-  api/             # API endpoint 與 HTTP client
-  components/      # 可重用 UI 與功能元件
-  composables/     # 可重用狀態與互動邏輯
-  layouts/         # 頁面外框
-  router/          # 路由與登入導頁規則
-  stores/          # 前端狀態/session helper
-  utils/           # 純函式、mapper、排序、HTML 處理
-  views/           # 路由頁面
+├─ app/                 # 啟動：main.js、App.vue、pinia.js
+├─ router/index.js      # 組裝各模組 routes + 全域登入守衛（含 legacy #/ 與 /activity 導頁）
+├─ layouts/             # DefaultLayout.vue（頁首/登出/包住 router-view）
+├─ styles/              # 全域 SCSS：variables.scss(tokens)、reset.scss、index.scss
+├─ shared/              # 平台層（不依賴 modules/）
+│  ├─ api/              # httpClient.js(axios)、apiResponse.js
+│  ├─ components/       # 全站共用 UI（AppButton、FormField、PageShell、CustomSelect、ProductTable…）
+│  ├─ composables/      # useTableSort、useTablePagination、useNoteDialog、useDialogScrollLock、
+│  │                    #   useConfirmDialog、useImageUpload、useMultiImageUpload
+│  ├─ stores/           # uiStore(Pinia,loading)、authStore(Pinia)、authSession.js(token helper)
+│  ├─ utils/            # format、html、tableSort、validation、formData、download、clipboard、queryString
+│  └─ constants/        # routes.js（ROUTE_NAMES）
+└─ modules/             # 功能模組
+   ├─ dashboard/  auth/  activity/  activityProduct/
+   └─ animateType/  inventory/  order/  report/
 ```
 
-## 分層規則
-
-### `api/`
-
-只放打 API 的程式。
-
-- `http.js`：底層 fetch wrapper、base URL、錯誤處理。
-- `adminAuth.js`：登入相關 API。
-- `activities.js`：活動、活動類型、動漫、刪除/還原活動。
-- `activityProducts.js`：活動商品列表、新增、更新。
-- `orders.js`：全訂單清單、跨活動可訂商品、訂單 CRUD 與 PDF/Email。
-- `productStockTransactions.js`：庫存進出貨異動與歷程。
-
-規則：
-
-- `/api/...` endpoint 字串只能出現在 `src/api`。
-- `views` 和 `components` 不直接使用 `fetch`、`apiGet`、`apiPost`。
-- 頁面只呼叫語意化函式，例如 `listActivitiesApi()`、`createActivityApi()`。
-
-### `views/`
-
-路由頁面，負責組合資料流與頁面流程。
-
-頁面可以做：
-
-- 呼叫 `api/` 取得或儲存資料。
-- 管理頁面 loading、error、dialog open state。
-- 把資料和 callback 傳給 components。
-
-頁面不要做：
-
-- 寫大量 UI template。
-- 放可重用的互動邏輯。
-- 直接寫 API endpoint。
-- 放大型 mapper 或純資料轉換工具。
-
-### `components/`
-
-放畫面元件。元件自己的 CSS 寫在自己的 `.vue` 裡，使用 `<style scoped>`。
-
-目前分類：
-
-- `components/ui`：基礎 UI，例如 Button、Field、Message、IconButton。
-- `components/layout`：頁面容器與 panel，例如 PageShell、PanelCard。
-- `components/activities`：活動管理相關元件。
-- `components/products`：商品管理相關元件。
-- `components/animateTypes`：作品（動漫種類 animateType）管理相關元件，例如圖片上傳選擇器 `AnimateTypeImagePicker`。
-- `components/dashboard`：Dashboard 模組卡片。
-- `components/inventory`：庫存頁表格。
-- `components/activities/CustomSelect.vue`：全站共用下拉式選單；以 `tone` 套用活動、商品、庫存或訂單模組色。
-
-規則：
-
-- 元件以 props 接資料，以 emit 回報事件。
-- 元件不直接打 API。
-- 元件不讀 route，不做 router push，除非它本身就是 route-aware 元件。
-- 樣式放在元件內，不放共用 CSS 檔。
-
-### `composables/`
-
-放可重用的狀態與互動邏輯。
-
-目前分類：
-
-- `composables/activities/useActivityRangePicker.js`：活動日期區間選擇器邏輯。
-- `composables/common/useImageUpload.js`：圖片上傳、預覽、清理 Object URL。
-
-適合放在 composable 的內容：
-
-- 多個頁面或元件可能共用的 state。
-- 互動邏輯比 template 更複雜。
-- 需要生命週期清理或事件協調。
-
-### `utils/`
-
-放純函式，不持有 Vue state。
-
-目前分類：
-
-- `utils/html.js`：HTML sanitize / strip。
-- `utils/activities/activityMapper.js`：活動 API 資料轉換、日期格式轉換、狀態文字。
-- `utils/activities/activityTableSort.js`：活動表格排序。
-
-規則：
-
-- utils 不 import Vue。
-- utils 不打 API。
-- utils 不操作 DOM，除非檔名和用途明確，例如 HTML sanitize。
-
-### `layouts/`
-
-放頁面外框，例如 `DefaultLayout.vue`。
-
-Layout 可負責：
-
-- header / main layout。
-- 登出按鈕。
-- 顯示登入者資訊。
-- 包住 `router-view`。
-
-### `stores/`
-
-放 session 或跨頁狀態 helper。
-
-目前 `authSession.js` 負責：
-
-- 儲存 token。
-- 讀取登入狀態。
-- 取得顯示名稱。
-- 清除登入資訊。
-
-## 資料流
-
-一般頁面資料流：
+每個模組內部結構（依需要）：
 
 ```text
-view
-  -> api module
-    -> http.js
-      -> backend
-
-backend response
-  -> api module
-  -> view
-  -> utils mapper
-  -> components
+modules/{feature}/
+├─ pages/        # 路由頁面（薄 orchestration）：XxxPage.vue
+├─ components/   # 該功能的展示元件（表單 Dialog 等）
+├─ composables/  # 該功能的可重用狀態邏輯（useXxx.js）
+├─ utils/        # 該功能的純函式（mapper / 欄位定義 / payload builder…）
+├─ api/          # 該功能的 API（xxxApi.js，呼叫 httpClient）
+├─ styles/       # 該功能頁面的 scss（由頁面以 <style src> 外掛）
+└─ routes.js     # 該功能的路由（使用 ROUTE_NAMES）
 ```
 
-例如活動管理：
+## 平台層（shared/）規範
+
+### `shared/api`
+- `httpClient.js`：唯一的 axios 實例。**攔截器自動帶 `Authorization: Bearer <token>`**、處理 401（清 token + 導回登入）、全域 loading 計數、120s 逾時轉 408。後端 envelope `{ status, data, message }` 由 `apiResponse.unwrapApiResponse()` 解開（**沿用「數字版」成功判斷 `Number(status)<400`**）；攔截器回傳 envelope，呼叫端取 `response?.data`。
+- 二進位下載（PDF 等）走 `apiBlob(path, { accept, expectContentType, fallbackFileName })` → `{ blob, fileName }`，搭配 `shared/utils/download.triggerBlobDownload`。
+- **api 模組不要自己帶 auth header**（攔截器負責）。登入等不需 token 的請求可帶 `{ skipAuthHandling: true }`。
+
+### `shared/stores`（Pinia）
+- `uiStore`：全域 loading 遮罩（reference counter + 顯示延遲/最短顯示防抖）。由 httpClient 攔截器驅動。
+- `authStore`：反應式登入狀態（`isAuthenticated`/`displayName`/`signIn`/`signOut`），底層用 `authSession.js`。
+- `authSession.js`：localStorage token 純函式（`getAdminToken`/`setAdminToken`/`clearAdminToken`/`isAdminAuthenticated`/…）。httpClient 與 router 守衛直接用它（不進 Pinia context）。
+
+### 樣式
+- 全域 reset / tokens 放 `src/styles/`（scss）。元件色彩/間距盡量用 `variables.scss` 的 token。
+- 頁面樣式外掛到模組 `styles/*.scss`，頁面以 `<style scoped lang="scss" src="../styles/xxx.scss">` 引入（保持 scoped、同時讓 SFC 變薄）。葉子元件可用內嵌 `<style scoped lang="scss">`。
+
+## 路由
+- route name 集中在 `shared/constants/routes.js` 的 `ROUTE_NAMES`；各模組 `routes.js` 只引用、不硬寫字串。
+- `router/index.js` 把各模組 `routes` 以 `...xxxRoutes` 組進 `DefaultLayout` children（登入頁為頂層）。**頁面採 lazy load**（`() => import(...)`）。
+- 新增頁面流程：補 `ROUTE_NAMES` → 在模組 `routes.js` 加 route → 在 `router/index.js` spread 進來。
+
+## 資料流（一般頁面）
 
 ```text
-activity.vue
-  -> listActivitiesApi()
-  -> mapActivityFromApi()
-  -> ActivityTable.vue
+XxxPage.vue (orchestration)
+  -> useXxx() composable（狀態/互動）
+       -> xxxApi.js -> httpClient -> backend
+       -> utils（純轉換）
+  -> 子元件（props in / emit out）
 ```
 
-新增或編輯活動：
+## 測試
+- 純函式 / 業務規則用 Node 內建 `node:test`（`*.test.js` colocate）。執行：
+  `node --import ./tools/test-alias.register.mjs --test`（loader 讓 `@/` alias 在測試中可解析）。
+- 優先測：mapper、filters、欄位定義、payload builder、狀態表、`shippableOrders` 之類聚合邏輯、shared utils。
 
-```text
-ActivityFormDialog.vue
-  -> emit submit
-activity.vue
-  -> build FormData
-  -> createActivityApi() / updateActivityApi()
-```
+## 跨模組相依
+- `shared/` **不可** import `modules/`。
+- 模組之間原則上不互相 import；但本專案領域天然巢狀（活動 ⊃ 商品 ⊃ 訂單 ⊃ 庫存、報表跨多域），少數**領域相依**是允許的，例如 `inventory` 取用 `order`/`activityProduct` 的 api、`report` 取用 `activity` 的 mapper。新增此類相依前先想清楚方向，避免循環。
 
-商品與庫存：
-
-```text
-ActivityProducts.vue / Inventory.vue
-  -> activityProducts.js
-  -> API 回傳 amount / isOutStock
-  -> ProductTable.vue 僅顯示與篩選回傳狀態
-```
-
-- `isOutStock` 不可由前端以數量推算，也不可由商品表單修改。
-- 現貨商品建立時可填初始數量；該數量由後端建立庫存異動。後續數量變動由庫存管理操作。
-
-訂單管理：
-
-```text
-Orders.vue
-  -> listAllOrders() / listOrderProducts()
-  -> 全部訂單與跨活動商品選項
-  -> 明細 item.activityName 顯示商品所屬活動
-```
-
-## CSS 規則
-
-- 不使用 `src/style.css` 集中管理頁面樣式。
-- 元件自己的 CSS 放在自己的 `.vue`。
-- 全站 reset / body / root 等極少數全域設定放在 `App.vue`。
-- 共用 UI 樣式應該抽成 component，而不是抽成大型 CSS class。
-- 所有下拉式選單使用 `CustomSelect`，不使用原生 `<select>` 或第三方 select。
-- 模組色：活動管理使用紅色、訂單管理使用橘黃色、庫存與商品管理使用綠色；下拉與 Modal 同樣遵循模組色。
-
-## 新增功能時放哪裡
-
-新增一個 API：
-
-1. 在 `src/api` 建立或更新對應 domain 檔案。
-2. endpoint 字串寫在 api module。
-3. view 呼叫 api module 的語意化函式。
-
-新增一個頁面：
-
-1. 在 `src/views` 建立 route page。
-2. 在 `src/router/index.js` 加路由。
-3. 若頁面有複雜 UI，拆到 `src/components/<domain>`。
-
-新增一段可重用互動：
-
-1. 如果需要 Vue state，放 `src/composables`。
-2. 如果是純資料轉換，放 `src/utils`。
-
-新增一個表單或表格：
-
-1. 表單/表格 UI 放 `components/<domain>`。
-2. 資料 loading / submit 流程留在 view。
-3. API 呼叫留在 `api/`。
+## 新增功能放哪裡
+- 新 API：在該模組 `api/xxxApi.js` 加函式（呼叫 httpClient），endpoint 字串只出現在 api 檔。
+- 新頁面：模組 `pages/` 加 `XxxPage.vue`（薄）；複雜 UI 拆到模組 `components/`。
+- 可重用互動：模組 `composables/`（若跨模組共用 → `shared/composables/`）。
+- 純資料轉換：模組 `utils/`（若跨模組共用 → `shared/utils/`）。
 
 ## 命名慣例
+- 頁面：`XxxPage.vue`（PascalCase）。元件：PascalCase。
+- Composable：`useXxx.js`。API 模組：`xxxApi.js`。Util：以用途命名。
+- route name：`ROUTE_NAMES.XXX`。
 
-- Vue component：PascalCase，例如 `ActivityFormDialog.vue`。
-- Composable：`useXxx.js`，例如 `useImageUpload.js`。
-- API module：以 domain 命名，例如 `activities.js`。
-- Utils：以用途命名，例如 `activityMapper.js`、`activityTableSort.js`。
-
-## 目前活動管理頁拆分
-
-```text
-views/dashboard/activity.vue
-  負責頁面狀態、API 流程、dialog 開關、資料組裝
-
-components/activities/
-  ActivityTable.vue
-  ActivityFormDialog.vue
-  ActivityImagePicker.vue
-  DateRangePicker.vue
-  RichNoteEditor.vue
-  ActivityTrashDialog.vue
-  ActivityNoteDialog.vue
-  ActivityDeleteConfirmDialog.vue
-  CustomSelect.vue
-
-composables/activities/
-  useActivityRangePicker.js
-
-composables/common/
-  useImageUpload.js
-
-utils/activities/
-  activityMapper.js
-  activityTableSort.js
-```
+## 既有模組
+`dashboard`（功能入口）、`auth`（登入）、`activity`（活動）、`activityProduct`（活動商品）、`animateType`（作品/動漫種類）、`inventory`（庫存）、`order`（訂單）、`report`（報表分析）。

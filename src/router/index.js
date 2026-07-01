@@ -1,6 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
-import { isAdminAuthenticated } from '@/stores/authSession'
+import { isAdminAuthenticated } from '@/shared/stores/authSession'
+import dashboardRoutes from '@/modules/dashboard/routes'
+import authRoutes from '@/modules/auth/routes'
+import orderRoutes from '@/modules/order/routes'
+import activityRoutes from '@/modules/activity/routes'
+import activityProductRoutes from '@/modules/activityProduct/routes'
+import inventoryRoutes from '@/modules/inventory/routes'
+import animateTypeRoutes from '@/modules/animateType/routes'
+import reportRoutes from '@/modules/report/routes'
 
 const normalizeActivityPath = (path) => path.replace(/^\/activity(?=\/|$)/, '/activities')
 
@@ -21,25 +29,13 @@ const routes = [
     component: DefaultLayout,
     redirect: () => (isAdminAuthenticated() ? '/dashboard' : '/pages/login'),
     children: [
-      {
-        path: '/dashboard',
-        name: 'Dashboard',
-        component: () => import('@/views/dashboard/Dashboard.vue'),
-      },
-      {
-        path: '/activities',
-        name: 'Activity',
-        component: () => import('@/views/dashboard/activity.vue'),
-      },
+      ...dashboardRoutes,
+      ...activityRoutes,
       {
         path: '/activity',
         redirect: '/activities',
       },
-      {
-        path: '/activities/:activityId/products',
-        name: 'ActivityProducts',
-        component: () => import('@/views/dashboard/ActivityProducts.vue'),
-      },
+      ...activityProductRoutes,
       {
         path: '/activity/:activityId/products',
         redirect: (to) => ({
@@ -47,33 +43,13 @@ const routes = [
           params: to.params,
         }),
       },
-      {
-        path: '/animate-types',
-        name: 'AnimateTypes',
-        component: () => import('@/views/dashboard/AnimateTypes.vue'),
-      },
-      {
-        path: '/inventory',
-        name: 'Inventory',
-        component: () => import('@/views/dashboard/Inventory.vue'),
-      },
-      {
-        path: '/orders',
-        name: 'Orders',
-        component: () => import('@/views/dashboard/Orders.vue'),
-      },
-      {
-        path: '/reports',
-        name: 'Reports',
-        component: () => import('@/views/dashboard/Reports.vue'),
-      },
+      ...animateTypeRoutes,
+      ...inventoryRoutes,
+      ...orderRoutes,
+      ...reportRoutes,
     ],
   },
-  {
-    path: '/pages/login',
-    name: 'Login',
-    component: () => import('@/views/pages/Login.vue'),
-  },
+  ...authRoutes,
   {
     path: '/:pathMatch(.*)*',
     redirect: '/dashboard',
