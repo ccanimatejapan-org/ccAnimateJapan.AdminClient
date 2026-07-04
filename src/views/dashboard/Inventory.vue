@@ -311,7 +311,7 @@ const loadTransactionOrders = async (product) => {
 
   try {
     const orders = await listAllOrders()
-    const activeOrders = orders.filter((order) => ![5, 8].includes(Number(order.orderStatus)))
+    const activeOrders = orders.filter((order) => ![6, 8].includes(Number(order.orderStatus)))
     const details = await Promise.all(activeOrders.map((order) => getOrderDetail(order.id)))
 
     transactionOrders.value = details.flatMap((order) => {
