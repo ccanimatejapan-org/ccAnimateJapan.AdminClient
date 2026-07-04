@@ -1,16 +1,14 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { listActivities } from '@/api/activities'
 import {
-  listActivityProducts,
-  listOrderedActivityProducts,
   listProductTypes,
 } from '@/api/activityProducts'
 import {
   createProductStockTransaction,
+  listInventoryProducts,
   listProductStockTransactions,
+  listShippableProductOrders,
 } from '@/api/productStockTransactions'
-import { getOrderDetail, listAllOrders } from '@/api/orders'
 import ActivityNoteDialog from '@/components/activities/ActivityNoteDialog.vue'
 import CustomSelect from '@/components/activities/CustomSelect.vue'
 import ProductStockTransactionDialog from '@/components/inventory/ProductStockTransactionDialog.vue'
@@ -22,7 +20,6 @@ import PanelCard from '@/components/layout/PanelCard.vue'
 import ProductTable from '@/components/products/ProductTable.vue'
 import MessageBlock from '@/components/ui/MessageBlock.vue'
 import { useTableSort } from '@/composables/common/useTableSort'
-import { mapActivityFromApi } from '@/utils/activities/activityMapper'
 import { sanitizeHtml, stripHtml } from '@/utils/html'
 import {
   PRODUCT_STOCK_FILTERS,
@@ -50,7 +47,6 @@ const productStockOptions = [
 ]
 const pageSizeOptions = [10, 20, 50]
 
-const activities = ref([])
 const products = ref([])
 const productTypes = ref([])
 const isLoadingProducts = ref(false)
@@ -210,18 +206,6 @@ const paginationSummary = computed(() => {
   return `顯示 ${start}-${end} 筆，共 ${sortedProducts.value.length} 筆`
 })
 
-const loadActivities = async () => {
-  errorMessage.value = ''
-
-  try {
-    const responseActivities = await listActivities()
-    activities.value = responseActivities.map(mapActivityFromApi)
-  } catch (err) {
-    errorMessage.value = err.message || '載入活動失敗。'
-    activities.value = []
-  }
-}
-
 const loadProductTypes = async () => {
   isLoadingProductTypes.value = true
 
@@ -237,33 +221,19 @@ const loadProductTypes = async () => {
 }
 
 const loadProducts = async () => {
-  const requestActivities = [...activities.value]
   isLoadingProducts.value = true
-
-  if (!requestActivities.length) {
-    products.value = []
-    isLoadingProducts.value = false
-    return
-  }
-
   errorMessage.value = ''
 
   try {
-    const productGroups = await Promise.all(
-      requestActivities.map(async (activity) => {
-        const requestActivityId = Number(activity.id)
-        const fetchProducts = activity.isPreOrder ? listOrderedActivityProducts : listActivityProducts
-        const responseProducts = await fetchProducts(requestActivityId)
-
-        return responseProducts.map((product) => ({
-          ...mapProductFromApi(product, requestActivityId),
-          activityName: activity.name || `活動 #${requestActivityId}`,
-          isPreOrder: activity.isPreOrder === true,
-        }))
-      }),
-    )
-
-    products.value = productGroups.flat()
+    const responseProducts = await listInventoryProducts()
+    products.value = responseProducts.map((product) => {
+      const mappedProduct = mapProductFromApi(product)
+      return {
+        ...mappedProduct,
+        activityName: product.activityName || (mappedProduct.activityId ? `活動 #${mappedProduct.activityId}` : '-'),
+        isPreOrder: product.isPreOrder === true,
+      }
+    })
   } catch (err) {
     errorMessage.value = err.message || '載入庫存商品失敗。'
     products.value = []
@@ -310,20 +280,11 @@ const loadTransactionOrders = async (product) => {
   isLoadingTransactionOrders.value = true
 
   try {
-    const orders = await listAllOrders()
-    const activeOrders = orders.filter((order) => ![6, 8].includes(Number(order.orderStatus)))
-    const details = await Promise.all(activeOrders.map((order) => getOrderDetail(order.id)))
-
-    transactionOrders.value = details.flatMap((order) => {
-      const amount = (order?.items || [])
-        .filter((item) =>
-          Number(item.productId) === Number(product.id)
-          && Number(item.orderProductStatus || 1) !== 2
-        )
-        .reduce((total, item) => total + Number(item.amount || 0), 0)
-
-      return amount > 0 ? [{ ...order, amount }] : []
-    })
+    transactionOrders.value = (await listShippableProductOrders(product.id))
+      .map((order) => ({
+        ...order,
+        amount: toNumber(order.amount),
+      }))
 
     if (!transactionOrders.value.length) {
       transactionErrorMessage.value = '此商品目前沒有可供出貨的訂單。'
@@ -450,8 +411,7 @@ watch(totalPages, (nextTotalPages) => {
 
 onMounted(async () => {
   isLoadingProducts.value = true
-  await Promise.all([loadActivities(), loadProductTypes()])
-  await loadProducts()
+  await Promise.all([loadProductTypes(), loadProducts()])
 })
 </script>
 
