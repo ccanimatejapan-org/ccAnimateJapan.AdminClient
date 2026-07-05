@@ -83,6 +83,7 @@ XxxPage.vue (orchestration)
 - 新頁面：模組 `pages/` 加 `XxxPage.vue`（薄）；複雜 UI 拆到模組 `components/`。
 - 可重用互動：模組 `composables/`（若跨模組共用 → `shared/composables/`）。
 - 純資料轉換：模組 `utils/`（若跨模組共用 → `shared/utils/`）。
+- 指向 WebClient 的公開頁連結若只屬於單一功能，放在該功能 `utils/`（例如活動的 `activityFormUrl.js`），避免回到頁面內硬寫路徑。
 
 ## 命名慣例
 - 頁面：`XxxPage.vue`（PascalCase）。元件：PascalCase。
