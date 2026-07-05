@@ -1,14 +1,15 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import AppButton from '@/components/ui/AppButton.vue'
-import { clearAdminToken, getAdminDisplayName } from '@/stores/authSession'
+import AppButton from '@/shared/components/AppButton.vue'
+import { useAuthStore } from '@/shared/stores/authStore'
 
 const router = useRouter()
-const adminName = computed(() => getAdminDisplayName())
+const authStore = useAuthStore()
+const adminName = computed(() => authStore.displayName)
 
 const logout = () => {
-  clearAdminToken()
+  authStore.signOut()
   router.push('/pages/login')
 }
 </script>
