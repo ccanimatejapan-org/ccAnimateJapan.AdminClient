@@ -114,6 +114,11 @@ const getPreOrderBadgeClass = (activity) =>
         <template v-else>
           <tr v-for="activity in activities" :key="activity.id">
             <td>
+              <span class="type-badge status-badge" :class="getStatusBadgeClass(activity.status)">
+                {{ activity.statusText }}
+              </span>
+            </td>
+            <td>
               <div class="date-stack">
                 <span>{{ activity.activityStartDate || '-' }}</span>
                 <span>~</span>
@@ -125,11 +130,6 @@ const getPreOrderBadgeClass = (activity) =>
               <img class="activity-thumb" :src="activity.image" :alt="activity.name || '活動圖片'" />
             </td>
             <td>{{ activity.address || '-' }}</td>
-            <td>
-              <span class="type-badge status-badge" :class="getStatusBadgeClass(activity.status)">
-                {{ activity.statusText }}
-              </span>
-            </td>
             <td>
               <span class="type-badge preorder-badge" :class="getPreOrderBadgeClass(activity)">
                 {{ activity.preOrderText }}

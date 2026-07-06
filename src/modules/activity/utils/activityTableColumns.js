@@ -2,6 +2,12 @@
 // factory stays pure/testable while reusing the page's live activityTypes/animateTypes maps.
 export const createActivityTableColumns = ({ getActivityTypeName, getAnimateTypeName, stripHtml }) => [
   {
+    key: 'status',
+    label: '活動狀態',
+    sortable: true,
+    getValue: (activity) => activity.statusText || '',
+  },
+  {
     key: 'activityPeriod',
     label: '活動期間',
     sortable: true,
@@ -24,12 +30,6 @@ export const createActivityTableColumns = ({ getActivityTypeName, getAnimateType
     label: '活動地址',
     sortable: true,
     getValue: (activity) => activity.address || '',
-  },
-  {
-    key: 'status',
-    label: '活動狀態',
-    sortable: true,
-    getValue: (activity) => activity.statusText || '',
   },
   {
     key: 'preOrder',

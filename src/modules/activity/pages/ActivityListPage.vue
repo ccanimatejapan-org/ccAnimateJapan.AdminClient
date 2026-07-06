@@ -212,7 +212,7 @@ const {
   getSortIndicator: getActivitySortIndicator,
 } = useTableSort(filteredActivities, activityTableColumns, {
   key: 'activityPeriod',
-  direction: 'asc',
+  direction: 'desc',
 })
 
 const {

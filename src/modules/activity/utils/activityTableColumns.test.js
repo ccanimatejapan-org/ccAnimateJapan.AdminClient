@@ -16,11 +16,11 @@ test('createActivityTableColumns returns the expected keys, labels and sortable 
   assert.deepEqual(
     columns.map((column) => [column.key, column.label, column.sortable]),
     [
+      ['status', '活動狀態', true],
       ['activityPeriod', '活動期間', true],
       ['name', '活動名稱', true],
       ['image', '活動圖片', true],
       ['address', '活動地址', true],
-      ['status', '活動狀態', true],
       ['preOrder', '活動模式', true],
       ['activityType', '活動類型', true],
       ['animateType', '動漫', true],
