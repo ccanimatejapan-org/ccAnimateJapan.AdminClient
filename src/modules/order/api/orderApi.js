@@ -6,6 +6,19 @@ export const listOrderActivities = async () => {
   return response?.data || []
 }
 
+// 未處理訂單筆數（OrderStatus = 顧客已下單）。silent：不觸發全域 loading 遮罩，供背景輪詢使用。
+export const getNewOrderCount = async () => {
+  const response = await httpClient.get('/api/orders/new-count', { silent: true })
+  return response?.data?.count ?? 0
+}
+
+// 未處理訂單清單（給頁首下拉選單用；orderStatus 1 = 顧客已下單）。silent：下拉自行顯示載入狀態。
+export const listNewOrders = async () => {
+  const query = toQueryString({ page: 1, pageSize: 100, orderStatus: 1 })
+  const response = await httpClient.get(`/api/orders${query}`, { silent: true })
+  return response?.data?.items || []
+}
+
 export const listOrderActivityProducts = async (activityId) => {
   const response = await httpClient.get(`/api/orders/activities/${activityId}/products`)
   return response?.data || []

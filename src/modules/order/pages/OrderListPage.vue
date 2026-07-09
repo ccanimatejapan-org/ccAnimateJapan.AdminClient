@@ -1,5 +1,6 @@
 <script setup>
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import OrderDeleteConfirmDialog from '@/modules/order/components/OrderDeleteConfirmDialog.vue'
 import OrderFormDialog from '@/modules/order/components/OrderFormDialog.vue'
 import { useOrders } from '@/modules/order/composables/useOrders'
@@ -51,6 +52,9 @@ const errorMessage = ref('')
 const statusMessage = ref('')
 const selectedOrder = ref(null)
 const isLoadingDetail = ref(false)
+const highlightedOrderId = ref(null)
+
+const route = useRoute()
 
 const orderStatusOptions = ORDER_STATUS_FILTER_OPTIONS
 const mutationOrderStatusOptions = ORDER_STATUS_OPTIONS
@@ -203,8 +207,45 @@ watch([searchKeyword, statusFilter], () => {
   page.value = 1
 })
 
+let highlightTimer = null
+
+// 從頁首「新訂單」下拉點進來時，暫時標示該筆訂單（幾秒後淡出）
+const highlightOrder = (orderId) => {
+  highlightedOrderId.value = orderId
+  if (highlightTimer) clearTimeout(highlightTimer)
+  highlightTimer = setTimeout(() => {
+    highlightedOrderId.value = null
+    highlightTimer = null
+  }, 5000)
+}
+
+// 依網址參數選取活動並標示訂單（onMounted 與換頁時各套用一次）
+const applyRouteSelection = () => {
+  const activityIdParam = Number(route.query.activityId)
+  const orderIdParam = Number(route.query.orderId)
+
+  if (activityIdParam && Number(selectedActivityId.value) !== activityIdParam) {
+    selectedActivityId.value = activityIdParam
+    expandedActivityId.value = activityIdParam
+  }
+
+  if (orderIdParam) {
+    highlightOrder(orderIdParam)
+  }
+}
+
+watch(
+  () => [route.query.activityId, route.query.orderId],
+  () => applyRouteSelection(),
+)
+
 onMounted(async () => {
   await Promise.all([loadActivities(), loadDeliveryTypes()])
+  applyRouteSelection()
+})
+
+onUnmounted(() => {
+  if (highlightTimer) clearTimeout(highlightTimer)
 })
 </script>
 
@@ -415,7 +456,11 @@ onMounted(async () => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="order in pagedOrders" :key="order.id">
+              <tr
+                v-for="order in pagedOrders"
+                :key="order.id"
+                :class="{ 'order-row--highlight': Number(order.id) === Number(highlightedOrderId) }"
+              >
                 <td>#{{ order.id }}</td>
                 <td>{{ order.subscriberName }}</td>
                 <td>{{ order.subscriberBank }}</td>
@@ -599,3 +644,20 @@ onMounted(async () => {
 </template>
 
 <style scoped lang="scss" src="../styles/order-list.scss"></style>
+
+<style scoped>
+tbody tr.order-row--highlight > td {
+  background: #fff6ce;
+  animation: order-row-flash 1.4s ease;
+}
+
+@keyframes order-row-flash {
+  from {
+    background: #ffe08a;
+  }
+
+  to {
+    background: #fff6ce;
+  }
+}
+</style>

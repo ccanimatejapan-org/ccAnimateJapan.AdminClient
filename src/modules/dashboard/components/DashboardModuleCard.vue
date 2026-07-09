@@ -1,5 +1,7 @@
 <script setup>
-defineProps({
+import { computed } from 'vue'
+
+const props = defineProps({
   module: {
     type: Object,
     required: true,
@@ -8,9 +10,18 @@ defineProps({
     type: Array,
     required: true,
   },
+  badgeCount: {
+    type: Number,
+    default: 0,
+  },
 })
 
 defineEmits(['open'])
+
+const ariaLabel = computed(() => {
+  const base = props.module.path ? `進入${props.module.title}` : props.module.title
+  return props.badgeCount > 0 ? `${base}，有 ${props.badgeCount} 筆未處理` : base
+})
 </script>
 
 <template>
@@ -18,9 +29,10 @@ defineEmits(['open'])
     class="module-card"
     type="button"
     :style="{ '--module-accent': module.accent }"
-    :aria-label="module.path ? `進入${module.title}` : module.title"
+    :aria-label="ariaLabel"
     @click="$emit('open', module)"
   >
+    <span v-if="badgeCount > 0" class="module-badge" aria-hidden="true">{{ badgeCount }}</span>
     <span class="module-icon" aria-hidden="true">
       <svg class="module-svg" viewBox="0 0 24 24" role="img">
         <path
@@ -70,6 +82,24 @@ defineEmits(['open'])
   height: 5px;
   background: var(--module-accent);
   content: '';
+}
+
+.module-badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  display: grid;
+  min-width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 999px;
+  background: #d64550;
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 0 7px;
+  box-shadow: 0 4px 12px rgb(214 69 80 / 35%);
 }
 
 .module-card::after {

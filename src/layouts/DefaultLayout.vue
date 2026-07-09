@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import AppButton from '@/shared/components/AppButton.vue'
+import NewOrdersMenu from '@/modules/order/components/NewOrdersMenu.vue'
 import { useAuthStore } from '@/shared/stores/authStore'
 
 const router = useRouter()
@@ -25,6 +26,7 @@ const logout = () => {
       </RouterLink>
 
       <div class="header-actions">
+        <NewOrdersMenu />
         <span class="admin-name">歡迎回來，{{ adminName }}</span>
         <AppButton type="button" @click="logout">登出</AppButton>
       </div>

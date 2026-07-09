@@ -2,8 +2,10 @@
 import { useRouter } from 'vue-router'
 import DashboardModuleCard from '@/modules/dashboard/components/DashboardModuleCard.vue'
 import PageShell from '@/shared/components/PageShell.vue'
+import { useNewOrdersStore } from '@/modules/order/stores/newOrdersStore'
 
 const router = useRouter()
+const newOrdersStore = useNewOrdersStore()
 
 const iconPaths = {
   calendar: [
@@ -84,6 +86,7 @@ const openModule = (module) => {
         :key="module.title"
         :module="module"
         :icon-paths="iconPaths[module.icon]"
+        :badge-count="module.path === '/orders' ? newOrdersStore.count : 0"
         @open="openModule"
       />
     </div>
