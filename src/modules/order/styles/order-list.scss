@@ -220,6 +220,23 @@
   transform: rotate(180deg);
 }
 
+.activity-pending-badge {
+  display: inline-flex;
+  min-width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #efc9cc;
+  border-radius: 999px;
+  background: #fff1f2;
+  color: #9d3e46;
+  font-size: 0.76rem;
+  font-weight: 900;
+  line-height: 1;
+  padding: 0 7px;
+}
+
 .activity-kind-badge {
   display: inline-flex;
   width: fit-content;

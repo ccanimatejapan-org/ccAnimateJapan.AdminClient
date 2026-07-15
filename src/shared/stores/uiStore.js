@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia'
+import { acceptHMRUpdate, defineStore } from 'pinia'
 import { ref } from 'vue'
 
 // 進行中的請求出現多久後才真正顯示遮罩（避免極快請求閃一下）
@@ -72,3 +72,8 @@ export const useUiStore = defineStore('ui', () => {
 
   return { isLoading, beginLoading, endLoading }
 })
+
+// 讓 store 於開發時支援熱替換，避免改動 store 後舊實例殘留（狀態形狀不同）而報錯
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useUiStore, import.meta.hot))
+}

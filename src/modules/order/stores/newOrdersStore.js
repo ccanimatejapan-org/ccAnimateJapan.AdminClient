@@ -1,22 +1,37 @@
-import { defineStore } from 'pinia'
+import { acceptHMRUpdate, defineStore } from 'pinia'
 import { ref } from 'vue'
-import { getNewOrderCount } from '@/modules/order/api/orderApi'
+import { getNewOrderCount, listNewOrders } from '@/modules/order/api/orderApi'
 
 // 每隔多久自動重新查詢一次未處理訂單數
 const POLL_INTERVAL_MS = 60_000
+
+// 依 activityId 彙總未處理訂單清單，回傳 { [activityId]: 筆數 }
+const groupCountByActivity = (orders) => {
+  const counts = {}
+  for (const order of orders) {
+    const { activityId } = order
+    if (activityId == null) continue
+    counts[activityId] = (counts[activityId] || 0) + 1
+  }
+  return counts
+}
 
 // 後台「未處理訂單」數的全域狀態：頁首標示與 Dashboard 訂單卡共用同一份計數。
 // 由 DefaultLayout 在掛載/卸載時 startPolling / stopPolling（等同「登入中才輪詢」）。
 export const useNewOrdersStore = defineStore('newOrders', () => {
   // 目前未處理（OrderStatus = 顧客已下單）的訂單筆數
   const count = ref(0)
+  // 依活動分組的未處理訂單數（訂單頁活動列表徽章用），key 為 activityId
+  const countsByActivity = ref({})
 
   let pollTimer = null
   let onVisibilityChange = null
 
   const refresh = async () => {
     try {
-      count.value = await getNewOrderCount()
+      const [total, newOrders] = await Promise.all([getNewOrderCount(), listNewOrders()])
+      count.value = total
+      countsByActivity.value = groupCountByActivity(newOrders)
     } catch (error) {
       // 靜默失敗：保留前一次數字，僅記錄以利除錯，不打斷後台操作
       console.error('[newOrders] 更新未處理訂單數失敗', error)
@@ -44,7 +59,13 @@ export const useNewOrdersStore = defineStore('newOrders', () => {
       onVisibilityChange = null
     }
     count.value = 0
+    countsByActivity.value = {}
   }
 
-  return { count, refresh, startPolling, stopPolling }
+  return { count, countsByActivity, refresh, startPolling, stopPolling }
 })
+
+// 讓 store 於開發時支援熱替換，避免改動 store 後舊實例殘留（狀態形狀不同）而報錯
+if (import.meta.hot) {
+  import.meta.hot.accept(acceptHMRUpdate(useNewOrdersStore, import.meta.hot))
+}

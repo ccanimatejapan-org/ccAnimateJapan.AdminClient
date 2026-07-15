@@ -1,11 +1,13 @@
 <script setup>
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import OrderDeleteConfirmDialog from '@/modules/order/components/OrderDeleteConfirmDialog.vue'
 import OrderFormDialog from '@/modules/order/components/OrderFormDialog.vue'
 import { useOrders } from '@/modules/order/composables/useOrders'
 import { useOrderForm } from '@/modules/order/composables/useOrderForm'
 import { useOrderRowActions } from '@/modules/order/composables/useOrderRowActions'
+import { useNewOrdersStore } from '@/modules/order/stores/newOrdersStore'
 import { createOrderColumns } from '@/modules/order/utils/orderColumns'
 import {
   getActivityKindText,
@@ -55,6 +57,11 @@ const isLoadingDetail = ref(false)
 const highlightedOrderId = ref(null)
 
 const route = useRoute()
+
+// 未處理訂單數：與頁首鈴鐺共用同一份全域計數，這裡用來在活動列表標示各活動待處理筆數
+const newOrdersStore = useNewOrdersStore()
+const { countsByActivity } = storeToRefs(newOrdersStore)
+const pendingOrderCount = (activityId) => countsByActivity.value[activityId] || 0
 
 const orderStatusOptions = ORDER_STATUS_FILTER_OPTIONS
 const mutationOrderStatusOptions = ORDER_STATUS_OPTIONS
@@ -147,6 +154,12 @@ const resetFilters = () => {
   page.value = 1
 }
 
+// 存檔後同步刷新未處理計數，讓活動徽章與頁首鈴鐺立即反映狀態變更
+const handleSubmitOrder = async () => {
+  await submitOrderForm()
+  newOrdersStore.refresh()
+}
+
 const openOrderDetail = async (orderId) => {
   isLoadingDetail.value = true
   errorMessage.value = ''
@@ -190,6 +203,7 @@ const confirmDeleteOrder = async () => {
     }
     closeDeleteDialog()
     await Promise.all([loadProducts(), loadOrders()])
+    newOrdersStore.refresh()
   } catch (err) {
     errorMessage.value = err?.message || '訂單刪除失敗'
   } finally {
@@ -306,6 +320,14 @@ onUnmounted(() => {
               />
               <span class="activity-name-row">
                 <span class="activity-name">{{ activity.activityName || `#${activity.activityId}` }}</span>
+                <span
+                  v-if="pendingOrderCount(activity.activityId) > 0"
+                  class="activity-pending-badge"
+                  :title="`還有 ${pendingOrderCount(activity.activityId)} 筆未處理訂單`"
+                  :aria-label="`還有 ${pendingOrderCount(activity.activityId)} 筆未處理訂單`"
+                >
+                  {{ pendingOrderCount(activity.activityId) }}
+                </span>
                 <svg
                   class="activity-caret"
                   :class="{ 'activity-caret--open': Number(activity.activityId) === Number(expandedActivityId) }"
@@ -627,7 +649,7 @@ onUnmounted(() => {
       :is-saving="isSavingOrder"
       :error-message="formErrorMessage"
       @close="closeOrderDialog"
-      @submit="submitOrderForm"
+      @submit="handleSubmitOrder"
       @add-item="addOrderItem"
       @remove-item="removeOrderItem"
       @delete="openDeleteEditingOrder"
