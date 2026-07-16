@@ -277,9 +277,6 @@ defineEmits([
           <FormField label="免運門檻（採購總額）" soft>
             <input v-model.number="form.freeShippingThreshold" type="number" min="0" step="1" placeholder="採購總額達此值免運（元）" />
           </FormField>
-          <FormField label="未達門檻運費成本" soft>
-            <input v-model.number="form.shippingCost" type="number" min="0" step="1" placeholder="未達門檻時的實際運費（元）" />
-          </FormField>
         </template>
 
         <!-- C：買了就免運 -->

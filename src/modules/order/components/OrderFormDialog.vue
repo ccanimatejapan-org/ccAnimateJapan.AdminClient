@@ -34,6 +34,10 @@ const props = defineProps({
     type: Array,
     required: true,
   },
+  shippingPaymentStatusOptions: {
+    type: Array,
+    required: true,
+  },
   isSaving: {
     type: Boolean,
     default: false,
@@ -190,6 +194,31 @@ const getProductLabel = (item) => {
               class="custom-select-option"
               type="button"
               @click="selectOption('deliveryStatus', option.value)"
+            >
+              {{ option.label }}
+            </button>
+          </CustomSelect>
+        </div>
+
+        <label v-if="props.editingOrderId" class="order-form-field">
+          <span>自行補運費金額</span>
+          <input v-model.number="props.form.shippingFee" min="0" type="number" />
+        </label>
+
+        <div v-if="props.editingOrderId" class="form-field">
+          <span class="field-label">自行補運費狀態</span>
+          <CustomSelect
+            tone="orders"
+            :label="getStatusLabel('shippingPaymentStatus', props.shippingPaymentStatusOptions)"
+            :open="openSelectKey === 'shippingPaymentStatus'"
+            @toggle="toggleSelect('shippingPaymentStatus')"
+          >
+            <button
+              v-for="option in props.shippingPaymentStatusOptions"
+              :key="option.value"
+              class="custom-select-option"
+              type="button"
+              @click="selectOption('shippingPaymentStatus', option.value)"
             >
               {{ option.label }}
             </button>

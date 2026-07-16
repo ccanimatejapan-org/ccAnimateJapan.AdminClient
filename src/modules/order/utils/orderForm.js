@@ -25,6 +25,8 @@ export const createEmptyOrderForm = () => ({
   orderStatus: 1,
   paymentStatus: 1,
   deliveryStatus: 1,
+  shippingFee: 0,
+  shippingPaymentStatus: 0,
   items: [createEmptyOrderItem()],
 })
 
@@ -48,6 +50,8 @@ export const buildUpdateOrderPayload = (form, activityId) => ({
   orderStatus: Number(form.orderStatus),
   paymentStatus: Number(form.paymentStatus),
   deliveryStatus: Number(form.deliveryStatus),
+  shippingFee: Number(form.shippingFee) || 0,
+  shippingPaymentStatus: Number(form.shippingPaymentStatus) || 0,
 })
 
 export const validateOrderForm = (form, { isEdit = false, activityId } = {}) => {
