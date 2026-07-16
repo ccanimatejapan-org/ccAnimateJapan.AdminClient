@@ -80,6 +80,13 @@ const getStatusBadgeClass = (status) => {
 
 const getPreOrderBadgeClass = (activity) =>
   activity.isPreOrder ? 'preorder-badge--preorder' : 'preorder-badge--open'
+
+const getGroupBuyBadgeClass = (status) => {
+  if (status === 'Recruiting') return 'groupbuy-badge--recruiting'
+  if (status === 'Formed') return 'groupbuy-badge--formed'
+  if (status === 'Failed') return 'groupbuy-badge--failed'
+  return 'groupbuy-badge--none'
+}
 </script>
 
 <template>
@@ -133,6 +140,14 @@ const getPreOrderBadgeClass = (activity) =>
             <td>
               <span class="type-badge preorder-badge" :class="getPreOrderBadgeClass(activity)">
                 {{ activity.preOrderText }}
+              </span>
+            </td>
+            <td>
+              <span class="type-badge">{{ activity.shippingModeText || '-' }}</span>
+            </td>
+            <td>
+              <span class="type-badge groupbuy-badge" :class="getGroupBuyBadgeClass(activity.groupBuyStatus)">
+                {{ activity.groupBuyStatusText || '-' }}
               </span>
             </td>
             <td>
@@ -418,6 +433,34 @@ const getPreOrderBadgeClass = (activity) =>
   border-color: #b9c7f2;
   background: #f3f6ff;
   color: #334c9f;
+}
+
+.groupbuy-badge {
+  font-weight: 900;
+}
+
+.groupbuy-badge--none {
+  border-color: #d6dde3;
+  background: #eef1f3;
+  color: #4b5563;
+}
+
+.groupbuy-badge--recruiting {
+  border-color: #f3c98b;
+  background: #fff7e8;
+  color: #9a5b12;
+}
+
+.groupbuy-badge--formed {
+  border-color: #bfd8cb;
+  background: #f0faf4;
+  color: #22614c;
+}
+
+.groupbuy-badge--failed {
+  border-color: #e7c5c7;
+  background: #fff4f4;
+  color: #9d3e46;
 }
 
 .activity-note-cell {

@@ -59,6 +59,58 @@ export const toActivityStatusText = (value) => {
 
 export const toActivityPreOrderText = (isPreOrder) => (isPreOrder ? '預購' : '現貨')
 
+// ---- 運費 / 開團設定（V1）：以英文字串常數對應中文標籤 ----
+export const ShippingMode = Object.freeze({
+  PerItemPrepaid: 'PerItemPrepaid', // 境內固定運費（每件預收）
+  FreeOverAmount: 'FreeOverAmount', // 滿額免運
+  NoShipping: 'NoShipping', // 買了就免運（預設）
+})
+
+export const shippingModeOptions = Object.freeze([
+  { value: ShippingMode.NoShipping, label: '買了就免運' },
+  { value: ShippingMode.PerItemPrepaid, label: '境內固定運費' },
+  { value: ShippingMode.FreeOverAmount, label: '滿額免運' },
+])
+
+export const ShippingShareRule = Object.freeze({
+  ByQuantity: 'ByQuantity', // 依商品數量分攤
+  ByAmount: 'ByAmount', // 依商品金額比例分攤
+})
+
+export const shippingShareRuleOptions = Object.freeze([
+  { value: ShippingShareRule.ByQuantity, label: '依數量' },
+  { value: ShippingShareRule.ByAmount, label: '依金額比例' },
+])
+
+export const GroupBuyStatus = Object.freeze({
+  NotRequired: 'NotRequired', // 不需開團（現貨）
+  Recruiting: 'Recruiting', // 募集中
+  Formed: 'Formed', // 已成團
+  Failed: 'Failed', // 流團
+})
+
+// 預購活動可手動調整的開團狀態（現貨固定為不需開團，不列入選項）
+export const groupBuyStatusOptions = Object.freeze([
+  { value: GroupBuyStatus.Recruiting, label: '募集中' },
+  { value: GroupBuyStatus.Formed, label: '已成團' },
+  { value: GroupBuyStatus.Failed, label: '流團' },
+])
+
+const groupBuyStatusLabels = Object.freeze({
+  [GroupBuyStatus.NotRequired]: '不需開團',
+  [GroupBuyStatus.Recruiting]: '募集中',
+  [GroupBuyStatus.Formed]: '已成團',
+  [GroupBuyStatus.Failed]: '流團',
+})
+
+export const toShippingModeText = (value) =>
+  shippingModeOptions.find((option) => option.value === value)?.label || '買了就免運'
+
+export const toShippingShareRuleText = (value) =>
+  shippingShareRuleOptions.find((option) => option.value === value)?.label || '依數量'
+
+export const toGroupBuyStatusText = (value) => groupBuyStatusLabels[value] || '不需開團'
+
 export const mapActivityFromApi = (
   activity,
   { fallbackActivityImage = defaultFallbackActivityImage } = {},
@@ -66,8 +118,21 @@ export const mapActivityFromApi = (
   const status = normalizeActivityStatus(activity.status)
   const isPreOrder = activity.isPreOrder === true
 
+  const shippingMode = activity.shippingMode || ShippingMode.NoShipping
+  const groupBuyStatus = activity.groupBuyStatus || GroupBuyStatus.NotRequired
+
   return {
     id: activity.id,
+    shippingMode,
+    shippingModeText: toShippingModeText(shippingMode),
+    groupBuyThreshold: Number(activity.groupBuyThreshold ?? 0),
+    perItemShipping: Number(activity.perItemShipping ?? 0),
+    shippingCost: Number(activity.shippingCost ?? 0),
+    freeShippingThreshold: Number(activity.freeShippingThreshold ?? 0),
+    allowCustomerShippingTopUp: activity.allowCustomerShippingTopUp === true,
+    shippingShareRule: activity.shippingShareRule || ShippingShareRule.ByQuantity,
+    groupBuyStatus,
+    groupBuyStatusText: toGroupBuyStatusText(groupBuyStatus),
     activityStartDate: toDisplayDateTime(activity.activeStartTime),
     activityEndDate: toDisplayDateTime(activity.activeEndTime),
     image: activity.imageUrl || fallbackActivityImage,

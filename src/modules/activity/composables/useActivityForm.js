@@ -1,9 +1,12 @@
-import { onBeforeUnmount, reactive, ref } from 'vue'
+import { onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { createActivity as createActivityApi, updateActivity as updateActivityApi } from '@/modules/activity/api/activityApi'
 import { useActivityRangePicker } from '@/modules/activity/composables/useActivityRangePicker'
 import { useImageUpload } from '@/shared/composables/useImageUpload'
 import {
   ActivityEnum,
+  GroupBuyStatus,
+  ShippingMode,
+  ShippingShareRule,
   activityStatusOptions,
   dateTimeToIso,
   mapActivityFromApi,
@@ -29,6 +32,15 @@ const emptyForm = {
   info: '',
   status: ActivityEnum.NotStarted,
   isPreOrder: false,
+  // 運費 / 開團設定（V1）
+  shippingMode: ShippingMode.NoShipping,
+  groupBuyThreshold: 0,
+  perItemShipping: 0,
+  shippingCost: 0,
+  freeShippingThreshold: 0,
+  allowCustomerShippingTopUp: false,
+  shippingShareRule: ShippingShareRule.ByQuantity,
+  groupBuyStatus: GroupBuyStatus.NotRequired,
 }
 
 // Activity create/edit form: holds the reactive form, composes image upload + the form
@@ -50,6 +62,8 @@ export const useActivityForm = ({
   const editingActivity = ref(null)
   const isSaving = ref(false)
   const openSelectKey = ref('')
+  // 使用者是否手動選過分攤規則；為真時切換運費模式不再覆蓋其選擇
+  const shareRuleTouched = ref(false)
 
   const {
     calendarWeekdays,
@@ -113,7 +127,30 @@ export const useActivityForm = ({
   const selectCustomOption = (key, value) => {
     form[key] = value
     openSelectKey.value = ''
+
+    // 手動選過分攤規則後記住，之後切運費模式不再覆蓋
+    if (key === 'shippingShareRule') {
+      shareRuleTouched.value = true
+    }
+    // 切換運費模式時，若尚未手動選過分攤規則，給該模式較合理的建議值
+    if (key === 'shippingMode' && !shareRuleTouched.value) {
+      if (value === ShippingMode.PerItemPrepaid) form.shippingShareRule = ShippingShareRule.ByQuantity
+      else if (value === ShippingMode.FreeOverAmount) form.shippingShareRule = ShippingShareRule.ByAmount
+    }
   }
+
+  // 現貨/預購切換時同步開團狀態初值：現貨一律「不需開團」；預購從「不需開團」進來時預設「募集中」，
+  // 不覆蓋已載入或手動設定的「已成團」/「流團」。
+  watch(
+    () => form.isPreOrder,
+    (isPreOrder) => {
+      if (!isPreOrder) {
+        form.groupBuyStatus = GroupBuyStatus.NotRequired
+      } else if (form.groupBuyStatus === GroupBuyStatus.NotRequired) {
+        form.groupBuyStatus = GroupBuyStatus.Recruiting
+      }
+    },
+  )
 
   const handleFormRangeSelect = (key, date) => {
     const isRangeCompleted = selectRangeDate(key, date)
@@ -129,6 +166,7 @@ export const useActivityForm = ({
     editingActivity.value = null
     openSelectKey.value = ''
     openRangeKey.value = ''
+    shareRuleTouched.value = false
   }
 
   const openCreateDialog = () => {
@@ -156,7 +194,18 @@ export const useActivityForm = ({
       info: raw.info || '',
       status: normalizeActivityStatus(raw.status),
       isPreOrder: raw.isPreOrder === true,
+      // 運費/開團欄位由 mapper 回填（Step 1 為 mock 值，Step 2 為後端真實值）
+      shippingMode: activity.shippingMode ?? ShippingMode.NoShipping,
+      groupBuyThreshold: activity.groupBuyThreshold ?? 0,
+      perItemShipping: activity.perItemShipping ?? 0,
+      shippingCost: activity.shippingCost ?? 0,
+      freeShippingThreshold: activity.freeShippingThreshold ?? 0,
+      allowCustomerShippingTopUp: activity.allowCustomerShippingTopUp === true,
+      shippingShareRule: activity.shippingShareRule ?? ShippingShareRule.ByQuantity,
+      groupBuyStatus: activity.groupBuyStatus ?? GroupBuyStatus.NotRequired,
     })
+    // 既有活動的分攤規則視為已設定過，切換模式時不覆蓋
+    shareRuleTouched.value = true
     statusMessage.value = ''
     errorMessage.value = ''
     isDialogOpen.value = true
@@ -187,6 +236,17 @@ export const useActivityForm = ({
     if (isBlankValue(form.address)) missingFields.push('活動地址')
     if (isBlankValue(form.activityTypeId)) missingFields.push('活動類型')
     if (isBlankValue(form.animateTypeId)) missingFields.push('動漫')
+
+    // 分模式必填：A/C 預購需成團(開團)數量 > 0；B 需免運門檻 > 0
+    if (form.shippingMode === ShippingMode.PerItemPrepaid && form.isPreOrder && !(Number(form.groupBuyThreshold) > 0)) {
+      missingFields.push('成團數量')
+    }
+    if (form.shippingMode === ShippingMode.NoShipping && form.isPreOrder && !(Number(form.groupBuyThreshold) > 0)) {
+      missingFields.push('開團數量')
+    }
+    if (form.shippingMode === ShippingMode.FreeOverAmount && !(Number(form.freeShippingThreshold) > 0)) {
+      missingFields.push('免運門檻')
+    }
 
     const hasValidStatus = activityStatusOptions.some(
       (statusOption) => Number(statusOption.value) === Number(form.status),
@@ -222,6 +282,19 @@ export const useActivityForm = ({
       formData.append('imageFile', selectedImageFile.value)
     } else {
       appendIfValue(formData, 'imageUrl', form.imageUrl)
+    }
+
+    // 運費 / 開團設定：7 個設定欄一律送（appendIfValue 會送 0；bool 以字串送）
+    appendIfValue(formData, 'shippingMode', form.shippingMode)
+    appendIfValue(formData, 'groupBuyThreshold', form.groupBuyThreshold)
+    appendIfValue(formData, 'perItemShipping', form.perItemShipping)
+    appendIfValue(formData, 'shippingCost', form.shippingCost)
+    appendIfValue(formData, 'freeShippingThreshold', form.freeShippingThreshold)
+    formData.append('allowCustomerShippingTopUp', form.allowCustomerShippingTopUp ? 'true' : 'false')
+    appendIfValue(formData, 'shippingShareRule', form.shippingShareRule)
+    // 開團狀態僅在「編輯 + 預購」時送（現貨後端強制 NotRequired；建立時後端衍生）
+    if (activityId && form.isPreOrder) {
+      appendIfValue(formData, 'groupBuyStatus', form.groupBuyStatus)
     }
 
     return formData

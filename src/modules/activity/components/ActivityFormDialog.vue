@@ -7,6 +7,15 @@ import AppButton from '@/shared/components/AppButton.vue'
 import FormField from '@/shared/components/FormField.vue'
 import IconButton from '@/shared/components/IconButton.vue'
 import MessageBlock from '@/shared/components/MessageBlock.vue'
+import {
+  ShippingMode,
+  shippingModeOptions,
+  shippingShareRuleOptions,
+  groupBuyStatusOptions,
+  toShippingModeText,
+  toShippingShareRuleText,
+  toGroupBuyStatusText,
+} from '@/modules/activity/utils/activityMapper'
 
 defineProps({
   form: {
@@ -211,6 +220,105 @@ defineEmits([
             <span class="preorder-switch-text">{{ form.isPreOrder ? '預購' : '現貨' }}</span>
           </label>
         </FormField>
+
+        <!-- 運費 / 開團設定（Step 1：假資料試 UX） -->
+        <FormField as="div" label="運費模式">
+          <CustomSelect
+            :label="toShippingModeText(form.shippingMode)"
+            :open="isSelectOpen('shippingMode')"
+            @toggle="$emit('toggle-select', 'shippingMode')"
+          >
+            <button
+              v-for="modeOption in shippingModeOptions"
+              :key="modeOption.value"
+              class="custom-select-option"
+              type="button"
+              @click="$emit('select-option', 'shippingMode', modeOption.value)"
+            >
+              {{ modeOption.label }}
+            </button>
+          </CustomSelect>
+        </FormField>
+        <FormField as="div" label="開團狀態">
+          <CustomSelect
+            v-if="form.isPreOrder"
+            :label="toGroupBuyStatusText(form.groupBuyStatus)"
+            :open="isSelectOpen('groupBuyStatus')"
+            @toggle="$emit('toggle-select', 'groupBuyStatus')"
+          >
+            <button
+              v-for="statusOption in groupBuyStatusOptions"
+              :key="statusOption.value"
+              class="custom-select-option"
+              type="button"
+              @click="$emit('select-option', 'groupBuyStatus', statusOption.value)"
+            >
+              {{ statusOption.label }}
+            </button>
+          </CustomSelect>
+          <div v-else class="readonly-field">不需開團（現貨）</div>
+        </FormField>
+
+        <!-- A：境內固定運費 -->
+        <template v-if="form.shippingMode === ShippingMode.PerItemPrepaid">
+          <FormField label="每件預收運費" soft>
+            <input v-model.number="form.perItemShipping" type="number" min="0" step="1" placeholder="每件加收的運費（元）" />
+          </FormField>
+          <FormField label="運費成本（活動一筆）" soft>
+            <input v-model.number="form.shippingCost" type="number" min="0" step="1" placeholder="實際支付物流的運費（元）" />
+          </FormField>
+          <FormField v-if="form.isPreOrder" label="成團數量（件）" soft>
+            <input v-model.number="form.groupBuyThreshold" type="number" min="0" step="1" placeholder="達此件數才成團" />
+          </FormField>
+        </template>
+
+        <!-- B：滿額免運 -->
+        <template v-else-if="form.shippingMode === ShippingMode.FreeOverAmount">
+          <FormField label="免運門檻（採購總額）" soft>
+            <input v-model.number="form.freeShippingThreshold" type="number" min="0" step="1" placeholder="採購總額達此值免運（元）" />
+          </FormField>
+          <FormField label="未達門檻運費成本" soft>
+            <input v-model.number="form.shippingCost" type="number" min="0" step="1" placeholder="未達門檻時的實際運費（元）" />
+          </FormField>
+        </template>
+
+        <!-- C：買了就免運 -->
+        <template v-else>
+          <FormField v-if="form.isPreOrder" label="開團數量（件）" soft>
+            <input v-model.number="form.groupBuyThreshold" type="number" min="0" step="1" placeholder="達此件數才開團" />
+          </FormField>
+        </template>
+
+        <!-- 補運費設定（境內固定運費 / 滿額免運 適用） -->
+        <template v-if="form.shippingMode === ShippingMode.PerItemPrepaid || form.shippingMode === ShippingMode.FreeOverAmount">
+          <FormField as="div" label="允許顧客補運費" soft>
+            <label class="preorder-switch">
+              <input v-model="form.allowCustomerShippingTopUp" type="checkbox" />
+              <span class="preorder-switch-track" aria-hidden="true">
+                <span class="preorder-switch-thumb"></span>
+              </span>
+              <span class="preorder-switch-text">{{ form.allowCustomerShippingTopUp ? '允許' : '不允許' }}</span>
+            </label>
+          </FormField>
+          <FormField as="div" label="分攤規則">
+            <CustomSelect
+              :label="toShippingShareRuleText(form.shippingShareRule)"
+              :open="isSelectOpen('shippingShareRule')"
+              @toggle="$emit('toggle-select', 'shippingShareRule')"
+            >
+              <button
+                v-for="ruleOption in shippingShareRuleOptions"
+                :key="ruleOption.value"
+                class="custom-select-option"
+                type="button"
+                @click="$emit('select-option', 'shippingShareRule', ruleOption.value)"
+              >
+                {{ ruleOption.label }}
+              </button>
+            </CustomSelect>
+          </FormField>
+        </template>
+
         <FormField label="活動名稱" soft>
           <input v-model="form.name" required placeholder="活動名稱" />
         </FormField>
@@ -406,6 +514,18 @@ defineEmits([
 .preorder-switch-text {
   color: #384942;
   font-weight: 800;
+}
+
+.readonly-field {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  border: 1px solid #eaded2;
+  border-radius: 10px;
+  background: #f6f1ea;
+  color: #6b5f54;
+  padding: 0 13px;
+  font-weight: 700;
 }
 
 .dialog-actions {

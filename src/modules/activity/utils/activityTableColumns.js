@@ -38,6 +38,18 @@ export const createActivityTableColumns = ({ getActivityTypeName, getAnimateType
     getValue: (activity) => activity.preOrderText || '',
   },
   {
+    key: 'shippingMode',
+    label: '運費模式',
+    sortable: true,
+    getValue: (activity) => activity.shippingModeText || '',
+  },
+  {
+    key: 'groupBuyStatus',
+    label: '開團狀態',
+    sortable: true,
+    getValue: (activity) => activity.groupBuyStatusText || '',
+  },
+  {
     key: 'activityType',
     label: '活動類型',
     sortable: true,
