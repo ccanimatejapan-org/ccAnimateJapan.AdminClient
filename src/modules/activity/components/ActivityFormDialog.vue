@@ -157,6 +157,12 @@ defineEmits([
       </div>
 
       <div class="activity-form-grid">
+        <FormField label="活動名稱" soft full>
+          <input v-model="form.name" required placeholder="活動名稱" />
+        </FormField>
+        <FormField label="活動地址" soft full>
+          <input v-model="form.address" placeholder="活動地址" />
+        </FormField>
         <DateRangePicker
           label="活動期間"
           :open="isRangeOpen('activity')"
@@ -316,12 +322,6 @@ defineEmits([
           </FormField>
         </template>
 
-        <FormField label="活動名稱" soft>
-          <input v-model="form.name" required placeholder="活動名稱" />
-        </FormField>
-        <FormField label="活動地址" soft>
-          <input v-model="form.address" placeholder="活動地址" />
-        </FormField>
         <FormField as="div" label="活動類型">
           <CustomSelect
             :label="getActivityTypeSelectLabel()"
