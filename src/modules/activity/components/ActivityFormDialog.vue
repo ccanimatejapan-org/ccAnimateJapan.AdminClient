@@ -278,7 +278,7 @@ defineEmits([
 
         <!-- B：滿額免運 -->
         <template v-else-if="form.shippingMode === ShippingMode.FreeOverAmount">
-          <FormField label="免運門檻（採購總額）" soft>
+          <FormField label="免運門檻（台幣）" soft>
             <input v-model.number="form.freeShippingThreshold" type="number" min="0" step="1" placeholder="採購總額達此值免運（元）" />
           </FormField>
           <FormField label="運費成本（活動一筆）" soft>
