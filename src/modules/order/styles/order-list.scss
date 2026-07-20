@@ -662,6 +662,18 @@ tbody tr:last-child td {
   line-height: 1.45;
 }
 
+.detail-total-breakdown {
+  display: flex;
+  width: fit-content;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  margin: 0 4px 8px auto;
+  color: #7a6257;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
 .detail-total {
   display: flex;
   width: fit-content;

@@ -488,7 +488,7 @@ onUnmounted(() => {
                 <td>#{{ order.id }}</td>
                 <td>{{ order.subscriberName }}</td>
                 <td>{{ order.subscriberBank }}</td>
-                <td>{{ formatCurrency(order.total) }}</td>
+                <td>{{ formatCurrency(order.grandTotal) }}</td>
                 <td>
                   <span class="status-chip">{{ getOrderStatusLabel(order.orderStatus) }}</span>
                 </td>
@@ -631,9 +631,13 @@ onUnmounted(() => {
             </div>
           </div>
 
+          <div v-if="selectedOrder.shippingFee > 0" class="detail-total-breakdown">
+            <span>商品小計 {{ formatCurrency(selectedOrder.total) }}</span>
+            <span>補運費 {{ formatCurrency(selectedOrder.shippingFee) }}</span>
+          </div>
           <div class="detail-total" aria-label="訂單總額">
             <span>訂單總額</span>
-            <strong>{{ formatCurrency(selectedOrder.total) }}</strong>
+            <strong>{{ formatCurrency(selectedOrder.grandTotal) }}</strong>
           </div>
         </section>
 

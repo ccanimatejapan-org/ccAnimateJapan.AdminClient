@@ -92,3 +92,15 @@ XxxPage.vue (orchestration)
 
 ## 既有模組
 `dashboard`（功能入口）、`auth`（登入）、`activity`（活動）、`activityProduct`（活動商品）、`animateType`（作品/動漫種類）、`inventory`（庫存）、`order`（訂單）、`report`（報表分析）。
+
+## 功能備註：運費模式 / 補運費 / 訂單總額
+
+**活動表單（`activity` 模組 `ActivityFormDialog.vue` + `useActivityForm.js`）**
+
+- **現貨活動不顯示運費模式與開團設定**：整段運費/開團 UI 以 `v-if="form.isPreOrder"` 包住；切到現貨時 watch 會把運費模式強制回 `NoShipping`、分攤規則回 `ByQuantity`、關閉「允許顧客補運費」，避免殘留團購設定被存入或卡驗證。
+- **預購**才顯示運費模式：`PerItemPrepaid`（境內固定運費：每件預收＋運費成本＋成團數量）、`FreeOverAmount`（滿額免運：免運門檻＋**運費成本**，未達門檻時由顧客分攤該整筆運費）、`NoShipping`（買了就免運：開團數量）。
+- **分攤規則唯讀、由運費模式決定**：不給管理員選（`deriveShareRule(mode)`：`FreeOverAmount→ByAmount`、其餘 `→ByQuantity`），前端僅唯讀顯示、後端強制決定。
+
+**訂單顯示（`order` 模組 `OrderListPage.vue` + `orderColumns.js`）**
+
+- 訂單「金額 / 訂單總額」一律顯示後端算好的 **`grandTotal`（= 商品小計 `total` + 補運費 `shippingFee`）**，前端不自行加總；明細另列「商品小計 / 補運費」拆解（補運費 > 0 時）。列表排序基準也用 `grandTotal`。詳見 [後端計算顯示值] 原則。
