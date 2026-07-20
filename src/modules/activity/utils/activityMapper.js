@@ -82,6 +82,10 @@ export const shippingShareRuleOptions = Object.freeze([
   { value: ShippingShareRule.ByAmount, label: '依金額比例' },
 ])
 
+// 分攤規則由運費模式決定（唯讀顯示，不給管理員選）：滿額免運＝依金額比例、其餘＝依數量。
+export const deriveShareRule = (mode) =>
+  mode === ShippingMode.FreeOverAmount ? ShippingShareRule.ByAmount : ShippingShareRule.ByQuantity
+
 export const GroupBuyStatus = Object.freeze({
   NotRequired: 'NotRequired', // 不需開團（現貨）
   Recruiting: 'Recruiting', // 募集中

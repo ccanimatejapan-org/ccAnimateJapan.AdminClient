@@ -9,6 +9,7 @@ import {
   ShippingShareRule,
   activityStatusOptions,
   dateTimeToIso,
+  deriveShareRule,
   mapActivityFromApi,
   normalizeActivityStatus,
   toActivityStatusText,
@@ -62,8 +63,6 @@ export const useActivityForm = ({
   const editingActivity = ref(null)
   const isSaving = ref(false)
   const openSelectKey = ref('')
-  // 使用者是否手動選過分攤規則；為真時切換運費模式不再覆蓋其選擇
-  const shareRuleTouched = ref(false)
 
   const {
     calendarWeekdays,
@@ -128,14 +127,9 @@ export const useActivityForm = ({
     form[key] = value
     openSelectKey.value = ''
 
-    // 手動選過分攤規則後記住，之後切運費模式不再覆蓋
-    if (key === 'shippingShareRule') {
-      shareRuleTouched.value = true
-    }
-    // 切換運費模式時，若尚未手動選過分攤規則，給該模式較合理的建議值
-    if (key === 'shippingMode' && !shareRuleTouched.value) {
-      if (value === ShippingMode.PerItemPrepaid) form.shippingShareRule = ShippingShareRule.ByQuantity
-      else if (value === ShippingMode.FreeOverAmount) form.shippingShareRule = ShippingShareRule.ByAmount
+    // 分攤規則由運費模式決定（唯讀顯示，不給管理員選）：切換模式即同步。
+    if (key === 'shippingMode') {
+      form.shippingShareRule = deriveShareRule(value)
     }
   }
 
@@ -166,7 +160,6 @@ export const useActivityForm = ({
     editingActivity.value = null
     openSelectKey.value = ''
     openRangeKey.value = ''
-    shareRuleTouched.value = false
   }
 
   const openCreateDialog = () => {
@@ -201,11 +194,10 @@ export const useActivityForm = ({
       shippingCost: activity.shippingCost ?? 0,
       freeShippingThreshold: activity.freeShippingThreshold ?? 0,
       allowCustomerShippingTopUp: activity.allowCustomerShippingTopUp === true,
-      shippingShareRule: activity.shippingShareRule ?? ShippingShareRule.ByQuantity,
+      // 分攤規則一律由運費模式推導（唯讀顯示），不採後端舊值
+      shippingShareRule: deriveShareRule(activity.shippingMode ?? ShippingMode.NoShipping),
       groupBuyStatus: activity.groupBuyStatus ?? GroupBuyStatus.NotRequired,
     })
-    // 既有活動的分攤規則視為已設定過，切換模式時不覆蓋
-    shareRuleTouched.value = true
     statusMessage.value = ''
     errorMessage.value = ''
     isDialogOpen.value = true
@@ -246,6 +238,10 @@ export const useActivityForm = ({
     }
     if (form.shippingMode === ShippingMode.FreeOverAmount && !(Number(form.freeShippingThreshold) > 0)) {
       missingFields.push('免運門檻')
+    }
+    // 滿額免運：未達門檻時整筆運費由顧客分攤，故運費成本必填
+    if (form.shippingMode === ShippingMode.FreeOverAmount && !(Number(form.shippingCost) > 0)) {
+      missingFields.push('運費成本')
     }
 
     const hasValidStatus = activityStatusOptions.some(

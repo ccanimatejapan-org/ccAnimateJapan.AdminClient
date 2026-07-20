@@ -10,7 +10,6 @@ import MessageBlock from '@/shared/components/MessageBlock.vue'
 import {
   ShippingMode,
   shippingModeOptions,
-  shippingShareRuleOptions,
   groupBuyStatusOptions,
   toShippingModeText,
   toShippingShareRuleText,
@@ -283,6 +282,9 @@ defineEmits([
           <FormField label="免運門檻（採購總額）" soft>
             <input v-model.number="form.freeShippingThreshold" type="number" min="0" step="1" placeholder="採購總額達此值免運（元）" />
           </FormField>
+          <FormField label="運費成本（活動一筆）" soft>
+            <input v-model.number="form.shippingCost" type="number" min="0" step="1" placeholder="未達門檻時由顧客分攤的運費（元）" />
+          </FormField>
         </template>
 
         <!-- C：買了就免運 -->
@@ -303,22 +305,8 @@ defineEmits([
               <span class="preorder-switch-text">{{ form.allowCustomerShippingTopUp ? '允許' : '不允許' }}</span>
             </label>
           </FormField>
-          <FormField as="div" label="分攤規則">
-            <CustomSelect
-              :label="toShippingShareRuleText(form.shippingShareRule)"
-              :open="isSelectOpen('shippingShareRule')"
-              @toggle="$emit('toggle-select', 'shippingShareRule')"
-            >
-              <button
-                v-for="ruleOption in shippingShareRuleOptions"
-                :key="ruleOption.value"
-                class="custom-select-option"
-                type="button"
-                @click="$emit('select-option', 'shippingShareRule', ruleOption.value)"
-              >
-                {{ ruleOption.label }}
-              </button>
-            </CustomSelect>
+          <FormField as="div" label="分攤規則（依運費模式自動決定）">
+            <div class="readonly-field">{{ toShippingShareRuleText(form.shippingShareRule) }}</div>
           </FormField>
         </template>
 
