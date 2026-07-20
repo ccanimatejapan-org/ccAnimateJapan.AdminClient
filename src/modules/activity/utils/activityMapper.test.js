@@ -5,12 +5,19 @@ import {
   ActivityEnum,
   activityStatusOptions,
   dateTimeToIso,
+  deriveShareRule,
+  GroupBuyStatus,
   mapActivityFromApi,
   normalizeActivityStatus,
+  ShippingMode,
+  ShippingShareRule,
   toActivityPreOrderText,
   toActivityStatusText,
   toDisplayDateTime,
+  toGroupBuyStatusText,
   toInputDateTime,
+  toShippingModeText,
+  toShippingShareRuleText,
 } from './activityMapper.js'
 
 test('ActivityEnum and activityStatusOptions expose the five activity states', () => {
@@ -99,4 +106,49 @@ test('mapActivityFromApi falls back for missing optional fields', () => {
   assert.equal(mapped.activityType, '-')
   assert.equal(mapped.animateType, '-')
   assert.equal(mapped.image, '/cc-admin-mark.svg')
+})
+
+test('deriveShareRule maps FreeOverAmount to ByAmount and everything else to ByQuantity', () => {
+  assert.equal(deriveShareRule(ShippingMode.FreeOverAmount), ShippingShareRule.ByAmount)
+  assert.equal(deriveShareRule(ShippingMode.PerItemPrepaid), ShippingShareRule.ByQuantity)
+  assert.equal(deriveShareRule(ShippingMode.NoShipping), ShippingShareRule.ByQuantity)
+  assert.equal(deriveShareRule(undefined), ShippingShareRule.ByQuantity)
+})
+
+test('shipping / group-buy text mappers return labels with sensible fallbacks', () => {
+  assert.equal(toShippingModeText(ShippingMode.FreeOverAmount), '滿額免運')
+  assert.equal(toShippingModeText('unknown'), '買了就免運')
+  assert.equal(toShippingShareRuleText(ShippingShareRule.ByAmount), '依金額比例')
+  assert.equal(toShippingShareRuleText('unknown'), '依數量')
+  assert.equal(toGroupBuyStatusText(GroupBuyStatus.Recruiting), '募集中')
+  assert.equal(toGroupBuyStatusText('unknown'), '不需開團')
+})
+
+test('mapActivityFromApi derives shippingShareRule from mode and maps shipping fields', () => {
+  const amountMode = mapActivityFromApi({
+    id: 1,
+    shippingMode: ShippingMode.FreeOverAmount,
+    // 後端即使回傳不一致的 shippingShareRule，前端也應以運費模式為準重新推導
+    shippingShareRule: ShippingShareRule.ByQuantity,
+    perItemShipping: 30,
+    shippingCost: 120,
+    freeShippingThreshold: 1000,
+    groupBuyStatus: GroupBuyStatus.Recruiting,
+    allowCustomerShippingTopUp: true,
+  })
+  assert.equal(amountMode.shippingMode, ShippingMode.FreeOverAmount)
+  assert.equal(amountMode.shippingModeText, '滿額免運')
+  assert.equal(amountMode.shippingShareRule, ShippingShareRule.ByAmount)
+  assert.equal(amountMode.perItemShipping, 30)
+  assert.equal(amountMode.shippingCost, 120)
+  assert.equal(amountMode.freeShippingThreshold, 1000)
+  assert.equal(amountMode.allowCustomerShippingTopUp, true)
+  assert.equal(amountMode.groupBuyStatus, GroupBuyStatus.Recruiting)
+  assert.equal(amountMode.groupBuyStatusText, '募集中')
+
+  const defaults = mapActivityFromApi({ id: 2 })
+  assert.equal(defaults.shippingMode, ShippingMode.NoShipping)
+  assert.equal(defaults.shippingShareRule, ShippingShareRule.ByQuantity)
+  assert.equal(defaults.allowCustomerShippingTopUp, false)
+  assert.equal(defaults.groupBuyStatus, GroupBuyStatus.NotRequired)
 })

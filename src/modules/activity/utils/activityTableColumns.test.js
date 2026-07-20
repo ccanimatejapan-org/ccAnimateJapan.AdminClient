@@ -22,6 +22,8 @@ test('createActivityTableColumns returns the expected keys, labels and sortable 
       ['image', '活動圖片', true],
       ['address', '活動地址', true],
       ['preOrder', '活動模式', true],
+      ['shippingMode', '運費模式', true],
+      ['groupBuyStatus', '開團狀態', true],
       ['activityType', '活動類型', true],
       ['animateType', '動漫', true],
       ['prepPeriod', '準備期間', true],
@@ -46,6 +48,8 @@ test('createActivityTableColumns getValue functions read activity fields and inj
   assert.equal(getValue('address')({ address: '東京' }), '東京')
   assert.equal(getValue('status')({ statusText: '活動開始' }), '活動開始')
   assert.equal(getValue('preOrder')({ preOrderText: '預購' }), '預購')
+  assert.equal(getValue('shippingMode')({ shippingModeText: '滿額免運' }), '滿額免運')
+  assert.equal(getValue('groupBuyStatus')({ groupBuyStatusText: '募集中' }), '募集中')
   assert.equal(getValue('activityType')({ activityTypeId: 7 }), 'activity:7')
   assert.equal(getValue('animateType')({ animateTypeId: 9 }), 'animate:9')
   assert.equal(

@@ -134,7 +134,8 @@ export const mapActivityFromApi = (
     shippingCost: Number(activity.shippingCost ?? 0),
     freeShippingThreshold: Number(activity.freeShippingThreshold ?? 0),
     allowCustomerShippingTopUp: activity.allowCustomerShippingTopUp === true,
-    shippingShareRule: activity.shippingShareRule || ShippingShareRule.ByQuantity,
+    // 分攤規則一律由運費模式推導（與表單同一套規則），不直接採用後端回傳值，避免不一致
+    shippingShareRule: deriveShareRule(shippingMode),
     groupBuyStatus,
     groupBuyStatusText: toGroupBuyStatusText(groupBuyStatus),
     activityStartDate: toDisplayDateTime(activity.activeStartTime),
