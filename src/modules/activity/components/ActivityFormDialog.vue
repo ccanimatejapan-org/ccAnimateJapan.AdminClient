@@ -226,7 +226,8 @@ defineEmits([
           </label>
         </FormField>
 
-        <!-- 運費 / 開團設定（Step 1：假資料試 UX） -->
+        <!-- 運費 / 開團設定：現貨本來就有貨，無運費模式/開團概念，整段僅「預購」顯示 -->
+        <template v-if="form.isPreOrder">
         <FormField as="div" label="運費模式">
           <CustomSelect
             :label="toShippingModeText(form.shippingMode)"
@@ -246,7 +247,6 @@ defineEmits([
         </FormField>
         <FormField as="div" label="開團狀態">
           <CustomSelect
-            v-if="form.isPreOrder"
             :label="toGroupBuyStatusText(form.groupBuyStatus)"
             :open="isSelectOpen('groupBuyStatus')"
             @toggle="$emit('toggle-select', 'groupBuyStatus')"
@@ -261,7 +261,6 @@ defineEmits([
               {{ statusOption.label }}
             </button>
           </CustomSelect>
-          <div v-else class="readonly-field">不需開團（現貨）</div>
         </FormField>
 
         <!-- A：境內固定運費 -->
@@ -308,6 +307,7 @@ defineEmits([
           <FormField as="div" label="分攤規則（依運費模式自動決定）">
             <div class="readonly-field">{{ toShippingShareRuleText(form.shippingShareRule) }}</div>
           </FormField>
+        </template>
         </template>
 
         <FormField as="div" label="活動類型">

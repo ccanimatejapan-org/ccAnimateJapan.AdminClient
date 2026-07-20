@@ -133,13 +133,18 @@ export const useActivityForm = ({
     }
   }
 
-  // 現貨/預購切換時同步開團狀態初值：現貨一律「不需開團」；預購從「不需開團」進來時預設「募集中」，
-  // 不覆蓋已載入或手動設定的「已成團」/「流團」。
+  // 現貨/預購切換時同步開團與運費設定：
+  //   現貨本來就有貨 → 無開團、無運費模式概念，一律回到「不需開團」＋「買了就免運」並清掉補運費/分攤設定，
+  //                    避免隱藏的舊團購設定被存入或卡驗證。
+  //   預購從「不需開團」進來時預設「募集中」，不覆蓋已載入或手動設定的「已成團」/「流團」。
   watch(
     () => form.isPreOrder,
     (isPreOrder) => {
       if (!isPreOrder) {
         form.groupBuyStatus = GroupBuyStatus.NotRequired
+        form.shippingMode = ShippingMode.NoShipping
+        form.shippingShareRule = deriveShareRule(ShippingMode.NoShipping)
+        form.allowCustomerShippingTopUp = false
       } else if (form.groupBuyStatus === GroupBuyStatus.NotRequired) {
         form.groupBuyStatus = GroupBuyStatus.Recruiting
       }
