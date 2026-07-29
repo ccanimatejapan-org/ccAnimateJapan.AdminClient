@@ -11,6 +11,7 @@ test('createOrderColumns returns the expected column keys, labels and sortable f
     [
       ['id', '訂單', true],
       ['subscriberName', '訂購人', true],
+      ['memberDisplayName', 'LINE 名稱', true],
       ['subscriberBank', '帳號後五碼', true],
       ['total', '金額', true],
       ['orderStatus', '訂單狀態', true],
@@ -28,6 +29,8 @@ test('createOrderColumns getValue functions coerce values purely', () => {
   assert.equal(getValue('id')({}), 0)
   assert.equal(getValue('subscriberName')({ subscriberName: '王小明' }), '王小明')
   assert.equal(getValue('subscriberName')({}), '')
+  assert.equal(getValue('memberDisplayName')({ memberDisplayName: '陳小明' }), '陳小明')
+  assert.equal(getValue('memberDisplayName')({}), '')
   assert.equal(getValue('subscriberBank')({ subscriberBank: '12345' }), '12345')
   assert.equal(getValue('total')({ total: '1200' }), 1200)
   assert.equal(getValue('total')({}), 0)

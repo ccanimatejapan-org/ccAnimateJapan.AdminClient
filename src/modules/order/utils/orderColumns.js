@@ -1,6 +1,7 @@
 export const createOrderColumns = () => [
   { key: 'id', label: '訂單', sortable: true, getValue: (order) => Number(order.id || 0) },
   { key: 'subscriberName', label: '訂購人', sortable: true, getValue: (order) => order.subscriberName || '' },
+  { key: 'memberDisplayName', label: 'LINE 名稱', sortable: true, getValue: (order) => order.memberDisplayName || '' },
   { key: 'subscriberBank', label: '帳號後五碼', sortable: true, getValue: (order) => order.subscriberBank || '' },
   { key: 'total', label: '金額', sortable: true, getValue: (order) => Number(order.total || 0) },
   { key: 'orderStatus', label: '訂單狀態', sortable: true, getValue: (order) => Number(order.orderStatus || 0) },

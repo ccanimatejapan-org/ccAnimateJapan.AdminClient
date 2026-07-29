@@ -485,6 +485,7 @@ onUnmounted(() => {
               >
                 <td>#{{ order.id }}</td>
                 <td>{{ order.subscriberName }}</td>
+                <td>{{ order.memberDisplayName || '—' }}</td>
                 <td>{{ order.subscriberBank }}</td>
                 <td>{{ formatCurrency(order.total) }}</td>
                 <td>
