@@ -32,7 +32,7 @@ test('createOrderColumns getValue functions coerce values purely', () => {
   assert.equal(getValue('memberDisplayName')({ memberDisplayName: '陳小明' }), '陳小明')
   assert.equal(getValue('memberDisplayName')({}), '')
   assert.equal(getValue('subscriberBank')({ subscriberBank: '12345' }), '12345')
-  assert.equal(getValue('total')({ total: '1200' }), 1200)
+  assert.equal(getValue('total')({ grandTotal: '1200' }), 1200)
   assert.equal(getValue('total')({}), 0)
   assert.equal(getValue('orderStatus')({ orderStatus: '3' }), 3)
 

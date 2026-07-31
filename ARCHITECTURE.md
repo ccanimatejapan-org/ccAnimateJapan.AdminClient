@@ -4,6 +4,17 @@
 
 > 架構目標：每個東西都有明確的家。頁面只負責「流程編排（orchestration）」，可重用狀態邏輯放 composable、純資料轉換放 util、畫面放 component、API 交換放 api、樣式放 scss。**避免再出現上千行的單一頁面檔。**
 
+## 狀態碼 / 開團（跨 repo）
+
+活動/訂單的狀態碼**權威定義在後端**，前端只是鏡像；改任何狀態值務必同步後端與本 repo：
+
+- 權威登記表：[`../ccAnimateJapan.AdminAPI/docs/STATUS_CODES.md`](../ccAnimateJapan.AdminAPI/docs/STATUS_CODES.md)
+- 開團 / 運費 / 補運費怎麼運作：[`../ccAnimateJapan.AdminAPI/docs/GROUP_BUY.md`](../ccAnimateJapan.AdminAPI/docs/GROUP_BUY.md)
+- 本 repo 的狀態鏡像檔：
+  - `src/modules/activity/utils/activityMapper.js`（活動狀態 `ActivityEnum`、運費模式 `ShippingMode`、分攤規則 `ShippingShareRule`、開團狀態 `GroupBuyStatus` + 中文標籤）
+  - `src/modules/order/utils/orderStatuses.js`（訂單 / 付款 / 物流 / 訂單商品 / 補運費付款 各狀態）
+  - `src/modules/order/utils/activityOrderStatus.js`（可下單 / 唯讀活動狀態）
+
 ## 目錄總覽
 
 ```text
@@ -92,3 +103,15 @@ XxxPage.vue (orchestration)
 
 ## 既有模組
 `dashboard`（功能入口）、`auth`（登入）、`activity`（活動）、`activityProduct`（活動商品）、`animateType`（作品/動漫種類）、`inventory`（庫存）、`order`（訂單）、`report`（報表分析）。
+
+## 功能備註：運費模式 / 補運費 / 訂單總額
+
+**活動表單（`activity` 模組 `ActivityFormDialog.vue` + `useActivityForm.js`）**
+
+- **現貨活動不顯示運費模式與開團設定**：整段運費/開團 UI 以 `v-if="form.isPreOrder"` 包住；切到現貨時 watch 會把運費模式強制回 `NoShipping`、分攤規則回 `ByQuantity`、關閉「允許顧客補運費」，避免殘留團購設定被存入或卡驗證。
+- **預購**才顯示運費模式：`PerItemPrepaid`（境內固定運費：每件預收＋運費成本＋成團數量）、`FreeOverAmount`（滿額免運：免運門檻＋**運費成本**，未達門檻時由顧客分攤該整筆運費）、`NoShipping`（買了就免運：開團數量）。
+- **分攤規則唯讀、由運費模式決定**：不給管理員選（`deriveShareRule(mode)`：`FreeOverAmount→ByAmount`、其餘 `→ByQuantity`），前端僅唯讀顯示、後端強制決定。
+
+**訂單顯示（`order` 模組 `OrderListPage.vue` + `orderColumns.js`）**
+
+- 訂單「金額 / 訂單總額」一律顯示後端算好的 **`grandTotal`（= 商品小計 `total` + 補運費 `shippingFee`）**，前端不自行加總；明細另列「商品小計 / 補運費」拆解（補運費 > 0 時）。列表排序基準也用 `grandTotal`。詳見 [後端計算顯示值] 原則。

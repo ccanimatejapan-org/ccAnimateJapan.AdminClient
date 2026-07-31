@@ -27,9 +27,11 @@ import {
   ORDER_STATUS_FILTER_OPTIONS,
   ORDER_STATUS_OPTIONS,
   PAYMENT_STATUS_OPTIONS,
+  SHIPPING_PAYMENT_STATUS_OPTIONS,
   getDeliveryStatusLabel,
   getOrderStatusLabel,
   getPaymentStatusLabel,
+  getShippingPaymentStatusLabel,
 } from '@/modules/order/utils/orderStatuses'
 
 const viewIconPaths = [
@@ -487,7 +489,7 @@ onUnmounted(() => {
                 <td>{{ order.subscriberName }}</td>
                 <td>{{ order.memberDisplayName || '—' }}</td>
                 <td>{{ order.subscriberBank }}</td>
-                <td>{{ formatCurrency(order.total) }}</td>
+                <td>{{ formatCurrency(order.grandTotal) }}</td>
                 <td>
                   <span class="status-chip">{{ getOrderStatusLabel(order.orderStatus) }}</span>
                 </td>
@@ -606,6 +608,10 @@ onUnmounted(() => {
               <dt>物流狀態</dt>
               <dd>{{ getDeliveryStatusLabel(selectedOrder.deliveryStatus) }}</dd>
             </div>
+            <div v-if="selectedOrder.shippingFee > 0">
+              <dt>自行補運費</dt>
+              <dd>{{ getShippingPaymentStatusLabel(selectedOrder.shippingPaymentStatus) }}（{{ formatCurrency(selectedOrder.shippingFee) }}）</dd>
+            </div>
             <div>
               <dt>建立時間</dt>
               <dd>{{ toDisplayDateTime(selectedOrder.createdAt) }}</dd>
@@ -626,9 +632,13 @@ onUnmounted(() => {
             </div>
           </div>
 
+          <div v-if="selectedOrder.shippingFee > 0" class="detail-total-breakdown">
+            <span>商品小計 {{ formatCurrency(selectedOrder.total) }}</span>
+            <span>補運費 {{ formatCurrency(selectedOrder.shippingFee) }}</span>
+          </div>
           <div class="detail-total" aria-label="訂單總額">
             <span>訂單總額</span>
-            <strong>{{ formatCurrency(selectedOrder.total) }}</strong>
+            <strong>{{ formatCurrency(selectedOrder.grandTotal) }}</strong>
           </div>
         </section>
 
@@ -647,6 +657,7 @@ onUnmounted(() => {
       :order-status-options="mutationOrderStatusOptions"
       :payment-status-options="paymentStatusOptions"
       :delivery-status-options="deliveryStatusOptions"
+      :shipping-payment-status-options="SHIPPING_PAYMENT_STATUS_OPTIONS"
       :is-saving="isSavingOrder"
       :error-message="formErrorMessage"
       @close="closeOrderDialog"

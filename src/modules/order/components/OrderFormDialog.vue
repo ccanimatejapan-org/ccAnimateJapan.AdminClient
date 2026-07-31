@@ -34,6 +34,10 @@ const props = defineProps({
     type: Array,
     required: true,
   },
+  shippingPaymentStatusOptions: {
+    type: Array,
+    required: true,
+  },
   isSaving: {
     type: Boolean,
     default: false,
@@ -85,6 +89,13 @@ const getProductLabel = (item) => {
 
   return `${product.name || `#${productId}`} - ${product.activityName || `活動 #${product.activityId}`}`
 }
+
+const hasShippingTopUp = () => Number(props.form.shippingFee) > 0
+
+const getShippingPaymentStatusLabel = () =>
+  hasShippingTopUp()
+    ? getStatusLabel('shippingPaymentStatus', props.shippingPaymentStatusOptions)
+    : '無需補運費'
 </script>
 
 <template>
@@ -195,6 +206,40 @@ const getProductLabel = (item) => {
             </button>
           </CustomSelect>
         </div>
+
+        <section v-if="props.editingOrderId" class="shipping-topup-section">
+          <label class="order-form-field">
+            <span>自行補運費金額</span>
+            <input
+              v-model.number="props.form.shippingFee"
+              min="0"
+              type="number"
+              readonly
+              class="readonly-input"
+            />
+          </label>
+
+          <div class="form-field">
+            <span class="field-label">自行補運費狀態</span>
+            <CustomSelect
+              tone="orders"
+              :label="getShippingPaymentStatusLabel()"
+              :disabled="!hasShippingTopUp()"
+              :open="openSelectKey === 'shippingPaymentStatus'"
+              @toggle="toggleSelect('shippingPaymentStatus')"
+            >
+              <button
+                v-for="option in props.shippingPaymentStatusOptions"
+                :key="option.value"
+                class="custom-select-option"
+                type="button"
+                @click="selectOption('shippingPaymentStatus', option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </CustomSelect>
+          </div>
+        </section>
 
         <section class="order-items-section">
           <div class="order-items-heading">
@@ -379,6 +424,26 @@ const getProductLabel = (item) => {
   cursor: pointer;
 }
 
+.shipping-topup-section {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 16px;
+  border-top: 1px solid #f0e5dc;
+  padding-top: 16px;
+}
+
+.order-form-grid input.readonly-input {
+  background: #f6f1ea;
+  color: #6b5f54;
+  cursor: not-allowed;
+}
+
+.shipping-topup-section :deep(.custom-select-trigger:disabled) {
+  cursor: not-allowed;
+}
+
 .order-items-section {
   display: grid;
   grid-column: 1 / -1;
@@ -494,6 +559,7 @@ const getProductLabel = (item) => {
   }
 
   .order-form-grid,
+  .shipping-topup-section,
   .order-item-row {
     grid-template-columns: 1fr;
   }

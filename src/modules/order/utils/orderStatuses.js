@@ -37,6 +37,11 @@ export const ORDER_PRODUCT_STATUS_OPTIONS = [
   { value: 3, label: '缺貨' },
 ]
 
+export const SHIPPING_PAYMENT_STATUS_OPTIONS = [
+  { value: 1, label: '未付款自行運費' },
+  { value: 2, label: '已付款自行運費' },
+]
+
 const getStatusOptionLabel = (options, value) => {
   const numberValue = Number(value)
   const option = options.find((statusOption) => Number(statusOption.value) === numberValue)
@@ -53,6 +58,9 @@ export const getPaymentStatusLabel = (value) => getStatusOptionLabel(PAYMENT_STA
 export const getDeliveryStatusLabel = (value) => getStatusOptionLabel(DELIVERY_STATUS_OPTIONS, value)
 export const getOrderProductStatusLabel = (value) => getStatusOptionLabel(ORDER_PRODUCT_STATUS_OPTIONS, value)
 
+export const getShippingPaymentStatusLabel = (value) => getStatusOptionLabel(SHIPPING_PAYMENT_STATUS_OPTIONS, value)
+
 export const isValidOrderStatus = (value) => isValidStatus(ORDER_STATUS_OPTIONS, value)
 export const isValidPaymentStatus = (value) => isValidStatus(PAYMENT_STATUS_OPTIONS, value)
 export const isValidDeliveryStatus = (value) => isValidStatus(DELIVERY_STATUS_OPTIONS, value)
+export const isValidShippingPaymentStatus = (value) => isValidStatus(SHIPPING_PAYMENT_STATUS_OPTIONS, value)

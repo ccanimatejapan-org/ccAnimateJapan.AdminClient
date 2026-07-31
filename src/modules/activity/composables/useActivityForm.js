@@ -1,11 +1,15 @@
-import { onBeforeUnmount, reactive, ref } from 'vue'
+import { onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { createActivity as createActivityApi, updateActivity as updateActivityApi } from '@/modules/activity/api/activityApi'
 import { useActivityRangePicker } from '@/modules/activity/composables/useActivityRangePicker'
 import { useImageUpload } from '@/shared/composables/useImageUpload'
 import {
   ActivityEnum,
+  GroupBuyStatus,
+  ShippingMode,
+  ShippingShareRule,
   activityStatusOptions,
   dateTimeToIso,
+  deriveShareRule,
   mapActivityFromApi,
   normalizeActivityStatus,
   toActivityStatusText,
@@ -29,6 +33,14 @@ const emptyForm = {
   info: '',
   status: ActivityEnum.NotStarted,
   isPreOrder: false,
+  shippingMode: ShippingMode.NoShipping,
+  groupBuyThreshold: 0,
+  perItemShipping: 0,
+  shippingCost: 0,
+  freeShippingThreshold: 0,
+  allowCustomerShippingTopUp: false,
+  shippingShareRule: ShippingShareRule.ByQuantity,
+  groupBuyStatus: GroupBuyStatus.NotRequired,
 }
 
 // Activity create/edit form: holds the reactive form, composes image upload + the form
@@ -113,7 +125,25 @@ export const useActivityForm = ({
   const selectCustomOption = (key, value) => {
     form[key] = value
     openSelectKey.value = ''
+
+    if (key === 'shippingMode') {
+      form.shippingShareRule = deriveShareRule(value)
+    }
   }
+
+  watch(
+    () => form.isPreOrder,
+    (isPreOrder) => {
+      if (!isPreOrder) {
+        form.groupBuyStatus = GroupBuyStatus.NotRequired
+        form.shippingMode = ShippingMode.NoShipping
+        form.shippingShareRule = deriveShareRule(ShippingMode.NoShipping)
+        form.allowCustomerShippingTopUp = false
+      } else if (form.groupBuyStatus === GroupBuyStatus.NotRequired) {
+        form.groupBuyStatus = GroupBuyStatus.Recruiting
+      }
+    },
+  )
 
   const handleFormRangeSelect = (key, date) => {
     const isRangeCompleted = selectRangeDate(key, date)
@@ -156,6 +186,14 @@ export const useActivityForm = ({
       info: raw.info || '',
       status: normalizeActivityStatus(raw.status),
       isPreOrder: raw.isPreOrder === true,
+      shippingMode: activity.shippingMode ?? ShippingMode.NoShipping,
+      groupBuyThreshold: activity.groupBuyThreshold ?? 0,
+      perItemShipping: activity.perItemShipping ?? 0,
+      shippingCost: activity.shippingCost ?? 0,
+      freeShippingThreshold: activity.freeShippingThreshold ?? 0,
+      allowCustomerShippingTopUp: activity.allowCustomerShippingTopUp === true,
+      shippingShareRule: deriveShareRule(activity.shippingMode ?? ShippingMode.NoShipping),
+      groupBuyStatus: activity.groupBuyStatus ?? GroupBuyStatus.NotRequired,
     })
     statusMessage.value = ''
     errorMessage.value = ''
@@ -187,6 +225,19 @@ export const useActivityForm = ({
     if (isBlankValue(form.address)) missingFields.push('活動地址')
     if (isBlankValue(form.activityTypeId)) missingFields.push('活動類型')
     if (isBlankValue(form.animateTypeId)) missingFields.push('動漫')
+
+    if (form.shippingMode === ShippingMode.PerItemPrepaid && form.isPreOrder && !(Number(form.groupBuyThreshold) > 0)) {
+      missingFields.push('成團數量')
+    }
+    if (form.shippingMode === ShippingMode.NoShipping && form.isPreOrder && !(Number(form.groupBuyThreshold) > 0)) {
+      missingFields.push('開團數量')
+    }
+    if (form.shippingMode === ShippingMode.FreeOverAmount && !(Number(form.freeShippingThreshold) > 0)) {
+      missingFields.push('免運門檻')
+    }
+    if (form.shippingMode === ShippingMode.FreeOverAmount && !(Number(form.shippingCost) > 0)) {
+      missingFields.push('運費成本')
+    }
 
     const hasValidStatus = activityStatusOptions.some(
       (statusOption) => Number(statusOption.value) === Number(form.status),
@@ -222,6 +273,17 @@ export const useActivityForm = ({
       formData.append('imageFile', selectedImageFile.value)
     } else {
       appendIfValue(formData, 'imageUrl', form.imageUrl)
+    }
+
+    appendIfValue(formData, 'shippingMode', form.shippingMode)
+    appendIfValue(formData, 'groupBuyThreshold', form.groupBuyThreshold)
+    appendIfValue(formData, 'perItemShipping', form.perItemShipping)
+    appendIfValue(formData, 'shippingCost', form.shippingCost)
+    appendIfValue(formData, 'freeShippingThreshold', form.freeShippingThreshold)
+    formData.append('allowCustomerShippingTopUp', form.allowCustomerShippingTopUp ? 'true' : 'false')
+    appendIfValue(formData, 'shippingShareRule', form.shippingShareRule)
+    if (activityId && form.isPreOrder) {
+      appendIfValue(formData, 'groupBuyStatus', form.groupBuyStatus)
     }
 
     return formData
