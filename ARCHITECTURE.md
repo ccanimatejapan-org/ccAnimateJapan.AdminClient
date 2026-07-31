@@ -4,6 +4,17 @@
 
 > 架構目標：每個東西都有明確的家。頁面只負責「流程編排（orchestration）」，可重用狀態邏輯放 composable、純資料轉換放 util、畫面放 component、API 交換放 api、樣式放 scss。**避免再出現上千行的單一頁面檔。**
 
+## 狀態碼 / 開團（跨 repo）
+
+活動/訂單的狀態碼**權威定義在後端**，前端只是鏡像；改任何狀態值務必同步後端與本 repo：
+
+- 權威登記表：[`../ccAnimateJapan.AdminAPI/docs/STATUS_CODES.md`](../ccAnimateJapan.AdminAPI/docs/STATUS_CODES.md)
+- 開團 / 運費 / 補運費怎麼運作：[`../ccAnimateJapan.AdminAPI/docs/GROUP_BUY.md`](../ccAnimateJapan.AdminAPI/docs/GROUP_BUY.md)
+- 本 repo 的狀態鏡像檔：
+  - `src/modules/activity/utils/activityMapper.js`（活動狀態 `ActivityEnum`、運費模式 `ShippingMode`、分攤規則 `ShippingShareRule`、開團狀態 `GroupBuyStatus` + 中文標籤）
+  - `src/modules/order/utils/orderStatuses.js`（訂單 / 付款 / 物流 / 訂單商品 / 補運費付款 各狀態）
+  - `src/modules/order/utils/activityOrderStatus.js`（可下單 / 唯讀活動狀態）
+
 ## 目錄總覽
 
 ```text

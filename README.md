@@ -1,10 +1,12 @@
 # ccAnimateJapan.AdminClient
 
-後台 Vue 3 管理介面。功能包含活動/商品、作品（動漫種類 animateType）管理、庫存異動與不分活動的訂單管理。
+後台 Vue 3 管理介面。功能包含活動/商品、作品（動漫種類 animateType）管理、庫存異動、不分活動的訂單管理、報表分析，以及開團/運費模式設定。
+
+狀態碼與開團說明見 [ARCHITECTURE.md](./ARCHITECTURE.md#狀態碼--開團跨-repo)；權威定義在後端 [`../ccAnimateJapan.AdminAPI/docs/STATUS_CODES.md`](../ccAnimateJapan.AdminAPI/docs/STATUS_CODES.md)。
 
 ## 架構
 
-前端目錄與模組分工請參考 [FRONTEND_ARCHITECTURE.md](./FRONTEND_ARCHITECTURE.md)。
+前端架構（權威規範）見 [ARCHITECTURE.md](./ARCHITECTURE.md)；開發快速指引見 [CLAUDE.md](./CLAUDE.md)。
 
 ## 資料規則
 
