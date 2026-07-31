@@ -128,7 +128,6 @@ test('mapActivityFromApi derives shippingShareRule from mode and maps shipping f
   const amountMode = mapActivityFromApi({
     id: 1,
     shippingMode: ShippingMode.FreeOverAmount,
-    // 後端即使回傳不一致的 shippingShareRule，前端也應以運費模式為準重新推導
     shippingShareRule: ShippingShareRule.ByQuantity,
     perItemShipping: 30,
     shippingCost: 120,

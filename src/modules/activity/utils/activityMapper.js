@@ -59,11 +59,10 @@ export const toActivityStatusText = (value) => {
 
 export const toActivityPreOrderText = (isPreOrder) => (isPreOrder ? '預購' : '現貨')
 
-// ---- 運費 / 開團設定（V1）：以英文字串常數對應中文標籤 ----
 export const ShippingMode = Object.freeze({
-  PerItemPrepaid: 'PerItemPrepaid', // 境內固定運費（每件預收）
-  FreeOverAmount: 'FreeOverAmount', // 滿額免運
-  NoShipping: 'NoShipping', // 買了就免運（預設）
+  PerItemPrepaid: 'PerItemPrepaid',
+  FreeOverAmount: 'FreeOverAmount',
+  NoShipping: 'NoShipping',
 })
 
 export const shippingModeOptions = Object.freeze([
@@ -73,8 +72,8 @@ export const shippingModeOptions = Object.freeze([
 ])
 
 export const ShippingShareRule = Object.freeze({
-  ByQuantity: 'ByQuantity', // 依商品數量分攤
-  ByAmount: 'ByAmount', // 依商品金額比例分攤
+  ByQuantity: 'ByQuantity',
+  ByAmount: 'ByAmount',
 })
 
 export const shippingShareRuleOptions = Object.freeze([
@@ -82,18 +81,16 @@ export const shippingShareRuleOptions = Object.freeze([
   { value: ShippingShareRule.ByAmount, label: '依金額比例' },
 ])
 
-// 分攤規則由運費模式決定（唯讀顯示，不給管理員選）：滿額免運＝依金額比例、其餘＝依數量。
 export const deriveShareRule = (mode) =>
   mode === ShippingMode.FreeOverAmount ? ShippingShareRule.ByAmount : ShippingShareRule.ByQuantity
 
 export const GroupBuyStatus = Object.freeze({
-  NotRequired: 'NotRequired', // 不需開團（現貨）
-  Recruiting: 'Recruiting', // 募集中
-  Formed: 'Formed', // 已成團
-  Failed: 'Failed', // 流團
+  NotRequired: 'NotRequired',
+  Recruiting: 'Recruiting',
+  Formed: 'Formed',
+  Failed: 'Failed',
 })
 
-// 預購活動可手動調整的開團狀態（現貨固定為不需開團，不列入選項）
 export const groupBuyStatusOptions = Object.freeze([
   { value: GroupBuyStatus.Recruiting, label: '募集中' },
   { value: GroupBuyStatus.Formed, label: '已成團' },
@@ -134,7 +131,6 @@ export const mapActivityFromApi = (
     shippingCost: Number(activity.shippingCost ?? 0),
     freeShippingThreshold: Number(activity.freeShippingThreshold ?? 0),
     allowCustomerShippingTopUp: activity.allowCustomerShippingTopUp === true,
-    // 分攤規則一律由運費模式推導（與表單同一套規則），不直接採用後端回傳值，避免不一致
     shippingShareRule: deriveShareRule(shippingMode),
     groupBuyStatus,
     groupBuyStatusText: toGroupBuyStatusText(groupBuyStatus),

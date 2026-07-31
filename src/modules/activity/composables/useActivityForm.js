@@ -33,7 +33,6 @@ const emptyForm = {
   info: '',
   status: ActivityEnum.NotStarted,
   isPreOrder: false,
-  // 運費 / 開團設定（V1）
   shippingMode: ShippingMode.NoShipping,
   groupBuyThreshold: 0,
   perItemShipping: 0,
@@ -127,16 +126,11 @@ export const useActivityForm = ({
     form[key] = value
     openSelectKey.value = ''
 
-    // 分攤規則由運費模式決定（唯讀顯示，不給管理員選）：切換模式即同步。
     if (key === 'shippingMode') {
       form.shippingShareRule = deriveShareRule(value)
     }
   }
 
-  // 現貨/預購切換時同步開團與運費設定：
-  //   現貨本來就有貨 → 無開團、無運費模式概念，一律回到「不需開團」＋「買了就免運」並清掉補運費/分攤設定，
-  //                    避免隱藏的舊團購設定被存入或卡驗證。
-  //   預購從「不需開團」進來時預設「募集中」，不覆蓋已載入或手動設定的「已成團」/「流團」。
   watch(
     () => form.isPreOrder,
     (isPreOrder) => {
@@ -192,14 +186,12 @@ export const useActivityForm = ({
       info: raw.info || '',
       status: normalizeActivityStatus(raw.status),
       isPreOrder: raw.isPreOrder === true,
-      // 運費/開團欄位由 mapper 回填（Step 1 為 mock 值，Step 2 為後端真實值）
       shippingMode: activity.shippingMode ?? ShippingMode.NoShipping,
       groupBuyThreshold: activity.groupBuyThreshold ?? 0,
       perItemShipping: activity.perItemShipping ?? 0,
       shippingCost: activity.shippingCost ?? 0,
       freeShippingThreshold: activity.freeShippingThreshold ?? 0,
       allowCustomerShippingTopUp: activity.allowCustomerShippingTopUp === true,
-      // 分攤規則一律由運費模式推導（唯讀顯示），不採後端舊值
       shippingShareRule: deriveShareRule(activity.shippingMode ?? ShippingMode.NoShipping),
       groupBuyStatus: activity.groupBuyStatus ?? GroupBuyStatus.NotRequired,
     })
@@ -234,7 +226,6 @@ export const useActivityForm = ({
     if (isBlankValue(form.activityTypeId)) missingFields.push('活動類型')
     if (isBlankValue(form.animateTypeId)) missingFields.push('動漫')
 
-    // 分模式必填：A/C 預購需成團(開團)數量 > 0；B 需免運門檻 > 0
     if (form.shippingMode === ShippingMode.PerItemPrepaid && form.isPreOrder && !(Number(form.groupBuyThreshold) > 0)) {
       missingFields.push('成團數量')
     }
@@ -244,7 +235,6 @@ export const useActivityForm = ({
     if (form.shippingMode === ShippingMode.FreeOverAmount && !(Number(form.freeShippingThreshold) > 0)) {
       missingFields.push('免運門檻')
     }
-    // 滿額免運：未達門檻時整筆運費由顧客分攤，故運費成本必填
     if (form.shippingMode === ShippingMode.FreeOverAmount && !(Number(form.shippingCost) > 0)) {
       missingFields.push('運費成本')
     }
@@ -285,7 +275,6 @@ export const useActivityForm = ({
       appendIfValue(formData, 'imageUrl', form.imageUrl)
     }
 
-    // 運費 / 開團設定：7 個設定欄一律送（appendIfValue 會送 0；bool 以字串送）
     appendIfValue(formData, 'shippingMode', form.shippingMode)
     appendIfValue(formData, 'groupBuyThreshold', form.groupBuyThreshold)
     appendIfValue(formData, 'perItemShipping', form.perItemShipping)
@@ -293,7 +282,6 @@ export const useActivityForm = ({
     appendIfValue(formData, 'freeShippingThreshold', form.freeShippingThreshold)
     formData.append('allowCustomerShippingTopUp', form.allowCustomerShippingTopUp ? 'true' : 'false')
     appendIfValue(formData, 'shippingShareRule', form.shippingShareRule)
-    // 開團狀態僅在「編輯 + 預購」時送（現貨後端強制 NotRequired；建立時後端衍生）
     if (activityId && form.isPreOrder) {
       appendIfValue(formData, 'groupBuyStatus', form.groupBuyStatus)
     }

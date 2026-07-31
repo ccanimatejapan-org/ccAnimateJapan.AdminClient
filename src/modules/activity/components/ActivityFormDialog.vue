@@ -227,7 +227,6 @@ defineEmits([
           </label>
         </FormField>
 
-        <!-- 運費 / 開團設定：現貨本來就有貨，無運費模式/開團概念，整段僅「預購」顯示 -->
         <template v-if="form.isPreOrder">
         <FormField as="div" label="運費模式">
           <CustomSelect
@@ -264,7 +263,6 @@ defineEmits([
           </CustomSelect>
         </FormField>
 
-        <!-- A：境內固定運費 -->
         <template v-if="form.shippingMode === ShippingMode.PerItemPrepaid">
           <FormField label="每件預收運費" soft>
             <input v-model.number="form.perItemShipping" type="number" min="0" step="1" placeholder="每件加收的運費（元）" />
@@ -277,7 +275,6 @@ defineEmits([
           </FormField>
         </template>
 
-        <!-- B：滿額免運 -->
         <template v-else-if="form.shippingMode === ShippingMode.FreeOverAmount">
           <FormField label="免運門檻（台幣）" soft>
             <input v-model.number="form.freeShippingThreshold" type="number" min="0" step="1" placeholder="採購總額達此值免運（元）" />
@@ -287,7 +284,6 @@ defineEmits([
           </FormField>
         </template>
 
-        <!-- C：買了就免運 -->
         <template v-else>
           <FormField v-if="form.isPreOrder" label="開團數量（件）" soft>
             <input v-model.number="form.groupBuyThreshold" type="number" min="0" step="1" placeholder="達此件數才開團" />
@@ -339,7 +335,6 @@ defineEmits([
           </CustomSelect>
         </FormField>
 
-        <!-- 補運費設定（境內固定運費 / 滿額免運 適用；僅開團狀態為「流團」時顯示） -->
         <template
           v-if="
             form.isPreOrder &&

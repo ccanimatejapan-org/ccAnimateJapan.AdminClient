@@ -90,8 +90,6 @@ const getProductLabel = (item) => {
   return `${product.name || `#${productId}`} - ${product.activityName || `活動 #${product.activityId}`}`
 }
 
-// 補運費金額 > 0 才代表此訂單有待補運費（流團時由系統分攤算入）。
-// 金額為 0 時視為「無需補運費」：狀態下拉停用、不可選，藉此間接表達此訂單不需補運費。
 const hasShippingTopUp = () => Number(props.form.shippingFee) > 0
 
 const getShippingPaymentStatusLabel = () =>
@@ -209,7 +207,6 @@ const getShippingPaymentStatusLabel = () =>
           </CustomSelect>
         </div>
 
-        <!-- 補運費區塊：金額為系統於流團時自動分攤計算，唯讀不可編輯；以上分隔線與其他欄位區隔 -->
         <section v-if="props.editingOrderId" class="shipping-topup-section">
           <label class="order-form-field">
             <span>自行補運費金額</span>
@@ -443,7 +440,6 @@ const getShippingPaymentStatusLabel = () =>
   cursor: not-allowed;
 }
 
-/* 補運費狀態停用時（金額為 0＝無需補運費）以 not-allowed 取代共用元件預設的 wait 游標 */
 .shipping-topup-section :deep(.custom-select-trigger:disabled) {
   cursor: not-allowed;
 }
