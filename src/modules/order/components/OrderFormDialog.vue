@@ -89,6 +89,15 @@ const getProductLabel = (item) => {
 
   return `${product.name || `#${productId}`} - ${product.activityName || `活動 #${product.activityId}`}`
 }
+
+// 補運費金額 > 0 才代表此訂單有待補運費（流團時由系統分攤算入）。
+// 金額為 0 時視為「無需補運費」：狀態下拉停用、不可選，藉此間接表達此訂單不需補運費。
+const hasShippingTopUp = () => Number(props.form.shippingFee) > 0
+
+const getShippingPaymentStatusLabel = () =>
+  hasShippingTopUp()
+    ? getStatusLabel('shippingPaymentStatus', props.shippingPaymentStatusOptions)
+    : '無需補運費'
 </script>
 
 <template>
@@ -200,30 +209,40 @@ const getProductLabel = (item) => {
           </CustomSelect>
         </div>
 
-        <label v-if="props.editingOrderId" class="order-form-field">
-          <span>自行補運費金額</span>
-          <input v-model.number="props.form.shippingFee" min="0" type="number" />
-        </label>
+        <!-- 補運費區塊：金額為系統於流團時自動分攤計算，唯讀不可編輯；以上分隔線與其他欄位區隔 -->
+        <section v-if="props.editingOrderId" class="shipping-topup-section">
+          <label class="order-form-field">
+            <span>自行補運費金額</span>
+            <input
+              v-model.number="props.form.shippingFee"
+              min="0"
+              type="number"
+              readonly
+              class="readonly-input"
+            />
+          </label>
 
-        <div v-if="props.editingOrderId" class="form-field">
-          <span class="field-label">自行補運費狀態</span>
-          <CustomSelect
-            tone="orders"
-            :label="getStatusLabel('shippingPaymentStatus', props.shippingPaymentStatusOptions)"
-            :open="openSelectKey === 'shippingPaymentStatus'"
-            @toggle="toggleSelect('shippingPaymentStatus')"
-          >
-            <button
-              v-for="option in props.shippingPaymentStatusOptions"
-              :key="option.value"
-              class="custom-select-option"
-              type="button"
-              @click="selectOption('shippingPaymentStatus', option.value)"
+          <div class="form-field">
+            <span class="field-label">自行補運費狀態</span>
+            <CustomSelect
+              tone="orders"
+              :label="getShippingPaymentStatusLabel()"
+              :disabled="!hasShippingTopUp()"
+              :open="openSelectKey === 'shippingPaymentStatus'"
+              @toggle="toggleSelect('shippingPaymentStatus')"
             >
-              {{ option.label }}
-            </button>
-          </CustomSelect>
-        </div>
+              <button
+                v-for="option in props.shippingPaymentStatusOptions"
+                :key="option.value"
+                class="custom-select-option"
+                type="button"
+                @click="selectOption('shippingPaymentStatus', option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </CustomSelect>
+          </div>
+        </section>
 
         <section class="order-items-section">
           <div class="order-items-heading">
@@ -408,6 +427,27 @@ const getProductLabel = (item) => {
   cursor: pointer;
 }
 
+.shipping-topup-section {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 16px;
+  border-top: 1px solid #f0e5dc;
+  padding-top: 16px;
+}
+
+.order-form-grid input.readonly-input {
+  background: #f6f1ea;
+  color: #6b5f54;
+  cursor: not-allowed;
+}
+
+/* 補運費狀態停用時（金額為 0＝無需補運費）以 not-allowed 取代共用元件預設的 wait 游標 */
+.shipping-topup-section :deep(.custom-select-trigger:disabled) {
+  cursor: not-allowed;
+}
+
 .order-items-section {
   display: grid;
   grid-column: 1 / -1;
@@ -523,6 +563,7 @@ const getProductLabel = (item) => {
   }
 
   .order-form-grid,
+  .shipping-topup-section,
   .order-item-row {
     grid-template-columns: 1fr;
   }
