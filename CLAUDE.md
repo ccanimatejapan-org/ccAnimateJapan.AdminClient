@@ -16,6 +16,10 @@ ccAnimateJapan 的**後台管理介面**，技術棧 **Vue 3（Composition API�
 - **工具分工**：規劃＝Claude（分析需求、設計策略、拆步驟）；實作＝Codex；code review＝Claude。
 - **不要自動 commit**：調整完成後僅將變更留在工作目錄（unstaged），不要 `git add` / `commit` / `push`，由使用者最後檢查後自行提交。
 
+## 文件同步規則（改功能就改文件）
+
+新增或修改功能時，**必須同步更新相關文件**，並與程式碼一起 commit（不要事後補）：架構 / 模組邊界 → [`ARCHITECTURE.md`](ARCHITECTURE.md)；狀態值 → 同步各鏡像檔並確認與後端 [`STATUS_CODES.md`](../ccAnimateJapan.AdminAPI/docs/STATUS_CODES.md) 一致；開團 / 運費行為 → 後端 [`GROUP_BUY.md`](../ccAnimateJapan.AdminAPI/docs/GROUP_BUY.md)。
+
 ## 常用指令
 
 ```bash
