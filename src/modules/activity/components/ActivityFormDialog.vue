@@ -9,6 +9,7 @@ import IconButton from '@/shared/components/IconButton.vue'
 import MessageBlock from '@/shared/components/MessageBlock.vue'
 import {
   ShippingMode,
+  GroupBuyStatus,
   shippingModeOptions,
   groupBuyStatusOptions,
   toShippingModeText,
@@ -293,21 +294,6 @@ defineEmits([
           </FormField>
         </template>
 
-        <!-- 補運費設定（境內固定運費 / 滿額免運 適用） -->
-        <template v-if="form.shippingMode === ShippingMode.PerItemPrepaid || form.shippingMode === ShippingMode.FreeOverAmount">
-          <FormField as="div" label="允許顧客補運費" soft>
-            <label class="preorder-switch">
-              <input v-model="form.allowCustomerShippingTopUp" type="checkbox" />
-              <span class="preorder-switch-track" aria-hidden="true">
-                <span class="preorder-switch-thumb"></span>
-              </span>
-              <span class="preorder-switch-text">{{ form.allowCustomerShippingTopUp ? '允許' : '不允許' }}</span>
-            </label>
-          </FormField>
-          <FormField as="div" label="分攤規則（依運費模式自動決定）">
-            <div class="readonly-field">{{ toShippingShareRuleText(form.shippingShareRule) }}</div>
-          </FormField>
-        </template>
         </template>
 
         <FormField as="div" label="活動類型">
@@ -352,6 +338,30 @@ defineEmits([
             </button>
           </CustomSelect>
         </FormField>
+
+        <!-- 補運費設定（境內固定運費 / 滿額免運 適用；僅開團狀態為「流團」時顯示） -->
+        <template
+          v-if="
+            form.isPreOrder &&
+            (form.shippingMode === ShippingMode.PerItemPrepaid ||
+              form.shippingMode === ShippingMode.FreeOverAmount) &&
+            form.groupBuyStatus === GroupBuyStatus.Failed
+          "
+        >
+          <FormField as="div" label="允許顧客補運費" soft>
+            <label class="preorder-switch">
+              <input v-model="form.allowCustomerShippingTopUp" type="checkbox" />
+              <span class="preorder-switch-track" aria-hidden="true">
+                <span class="preorder-switch-thumb"></span>
+              </span>
+              <span class="preorder-switch-text">{{ form.allowCustomerShippingTopUp ? '允許' : '不允許' }}</span>
+            </label>
+          </FormField>
+          <FormField as="div" label="分攤規則（依運費模式自動決定）">
+            <div class="readonly-field">{{ toShippingShareRuleText(form.shippingShareRule) }}</div>
+          </FormField>
+        </template>
+
         <FormField as="div" label="活動圖片（上傳最大 5MB）" full>
           <ActivityImagePicker
             :selected-file-name="selectedImageFile?.name || ''"
