@@ -1,15 +1,13 @@
 import { computed, ref } from 'vue'
 
 // Inventory's single-select filter UX (differs from the multiselect product page):
-// get/set computed wrappers over the array-based searchFilters, the shared open-select
-// key state, and the trigger labels. `pageSize` is the pagination ref so the page-size
-// option list can close the dropdown after a pick.
+// get/set computed wrappers over the array-based searchFilters, shared open-select
+// key state, and trigger labels.
 export const useSingleSelectFilters = ({
   searchFilters,
   productTypes,
   isLoadingProductTypes,
   productStockOptions,
-  pageSize,
 }) => {
   const openSelectKey = ref('')
 
@@ -44,11 +42,6 @@ export const useSingleSelectFilters = ({
     openSelectKey.value = ''
   }
 
-  const selectPageSize = (value) => {
-    pageSize.value = Number(value)
-    openSelectKey.value = ''
-  }
-
   const productTypeSelectLabel = computed(() => {
     if (isLoadingProductTypes.value) return '載入商品類型中...'
     if (!selectedProductTypeId.value) return '全部類型'
@@ -67,7 +60,6 @@ export const useSingleSelectFilters = ({
     toggleSelect,
     selectProductType,
     selectStockStatus,
-    selectPageSize,
     productTypeSelectLabel,
     stockStatusSelectLabel,
   }

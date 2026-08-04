@@ -1,17 +1,15 @@
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import ActivityNoteDialog from '@/shared/components/ActivityNoteDialog.vue'
 import CustomSelect from '@/shared/components/CustomSelect.vue'
 import ProductStockTransactionDialog from '@/modules/inventory/components/ProductStockTransactionDialog.vue'
 import ProductStockTransactionHistoryDialog from '@/modules/inventory/components/ProductStockTransactionHistoryDialog.vue'
-import CountBadge from '@/shared/components/CountBadge.vue'
+import InventoryActivityGroup from '@/modules/inventory/components/InventoryActivityGroup.vue'
 import PageHeading from '@/shared/components/PageHeading.vue'
 import PageShell from '@/shared/components/PageShell.vue'
 import PanelCard from '@/shared/components/PanelCard.vue'
-import ProductTable from '@/shared/components/ProductTable.vue'
 import MessageBlock from '@/shared/components/MessageBlock.vue'
 import { useTableSort } from '@/shared/composables/useTableSort'
-import { useTablePagination } from '@/shared/composables/useTablePagination'
 import { useNoteDialog } from '@/shared/composables/useNoteDialog'
 import { sanitizeHtml, stripHtml } from '@/shared/utils/html'
 import { formatDateTime } from '@/shared/utils/format'
@@ -23,6 +21,14 @@ import { useInventoryProducts } from '@/modules/inventory/composables/useInvento
 import { useStockTransaction } from '@/modules/inventory/composables/useStockTransaction'
 import { useStockTransactionHistory } from '@/modules/inventory/composables/useStockTransactionHistory'
 import { useSingleSelectFilters } from '@/modules/inventory/composables/useSingleSelectFilters'
+import {
+  INVENTORY_MODES,
+  countInventoryProductsByMode,
+  createInventoryActivityCollapseKey,
+  createInventoryActivityGroups,
+  filterInventoryProductsByMode,
+  getInventoryModeEmptyText,
+} from '@/modules/inventory/utils/inventoryProductGroups'
 
 const inventoryIconPaths = [
   'M12 3 21 8l-9 5-9-5 9-5Z',
@@ -39,16 +45,29 @@ const productStockOptions = [
     label: '缺貨',
   },
 ]
-const pageSizeOptions = [10, 20, 50]
+const inventoryTabs = [
+  {
+    mode: INVENTORY_MODES.readyStock,
+    label: '現貨',
+    tabId: 'inventory-tab-ready-stock',
+    panelId: 'inventory-panel-ready-stock',
+  },
+  {
+    mode: INVENTORY_MODES.preOrder,
+    label: '預購',
+    tabId: 'inventory-tab-pre-order',
+    panelId: 'inventory-panel-pre-order',
+  },
+]
 
 const errorMessage = ref('')
 const statusMessage = ref('')
 const searchFilters = reactive(createEmptyProductFilters())
 
 const inventoryRuleText = '庫存數量與庫存狀態皆依庫存異動資料回傳；訂購數量為有效訂單件數減出貨。'
-const emptyProductText = '目前沒有商品。'
 
 const {
+  products,
   productTypes,
   isLoadingProducts,
   isLoadingProductTypes,
@@ -56,7 +75,6 @@ const {
   loadProducts,
   filteredProducts,
   hasFiltersApplied,
-  visibleProductsLabel,
 } = useInventoryProducts({ searchFilters, errorMessage })
 
 const {
@@ -79,34 +97,98 @@ const productTableColumns = createProductTableColumns({
   includeOrderedAmount: true,
 })
 
+const activeInventoryMode = ref(INVENTORY_MODES.readyStock)
+const inventoryTabButtons = ref([])
+const collapsedActivityKeys = reactive({})
+
+const filteredProductModeCounts = computed(() =>
+  countInventoryProductsByMode(filteredProducts.value),
+)
+const totalProductModeCounts = computed(() =>
+  countInventoryProductsByMode(products.value),
+)
+const currentModeFilteredProducts = computed(() =>
+  filterInventoryProductsByMode(
+    filteredProducts.value,
+    activeInventoryMode.value,
+  ),
+)
+
 const {
-  sortedItems: sortedProducts,
+  sortedItems: sortedCurrentModeProducts,
   isSortActive: isProductSortActive,
   toggleSort: toggleProductSort,
   getSortAriaSort: getProductSortAriaSort,
   getSortButtonLabel: getProductSortButtonLabel,
   getSortIndicator: getProductSortIndicator,
-} = useTableSort(filteredProducts, productTableColumns, {
+} = useTableSort(currentModeFilteredProducts, productTableColumns, {
   key: 'updatedAt',
   direction: 'desc',
 })
 
-const {
-  page,
-  pageSize,
-  totalPages,
-  paginatedItems: paginatedProducts,
-  goToPreviousPage,
-  goToNextPage,
-} = useTablePagination(sortedProducts, { pageSizeOptions })
+const currentActivityGroups = computed(() =>
+  createInventoryActivityGroups(sortedCurrentModeProducts.value),
+)
+const currentEmptyProductText = computed(() =>
+  getInventoryModeEmptyText({
+    mode: activeInventoryMode.value,
+    modeTotalCount: totalProductModeCounts.value[activeInventoryMode.value],
+    modeFilteredCount:
+      filteredProductModeCounts.value[activeInventoryMode.value],
+  }),
+)
 
-const paginationSummary = computed(() => {
-  if (!sortedProducts.value.length) return '目前沒有符合條件的商品'
+const selectInventoryMode = (mode) => {
+  if (!inventoryTabs.some((tab) => tab.mode === mode)) return
 
-  const start = (page.value - 1) * pageSize.value + 1
-  const end = Math.min(start + pageSize.value - 1, sortedProducts.value.length)
-  return `顯示 ${start}-${end} 筆，共 ${sortedProducts.value.length} 筆`
-})
+  activeInventoryMode.value = mode
+}
+
+const selectInventoryTabByIndex = (index) => {
+  const tabCount = inventoryTabs.length
+  const normalizedIndex = (index + tabCount) % tabCount
+  const tab = inventoryTabs[normalizedIndex]
+
+  selectInventoryMode(tab.mode)
+  nextTick(() => inventoryTabButtons.value[normalizedIndex]?.focus())
+}
+
+const handleInventoryTabKeydown = (event) => {
+  const currentIndex = inventoryTabs.findIndex(
+    (tab) => tab.mode === activeInventoryMode.value,
+  )
+
+  if (event.key === 'ArrowRight') {
+    event.preventDefault()
+    selectInventoryTabByIndex(currentIndex + 1)
+  } else if (event.key === 'ArrowLeft') {
+    event.preventDefault()
+    selectInventoryTabByIndex(currentIndex - 1)
+  } else if (event.key === 'Home') {
+    event.preventDefault()
+    selectInventoryTabByIndex(0)
+  } else if (event.key === 'End') {
+    event.preventDefault()
+    selectInventoryTabByIndex(inventoryTabs.length - 1)
+  }
+}
+
+const getActivityCollapseKey = (group) =>
+  createInventoryActivityCollapseKey(
+    activeInventoryMode.value,
+    group.activityId,
+  )
+
+const isActivityGroupCollapsed = (group) =>
+  collapsedActivityKeys[getActivityCollapseKey(group)] === true
+
+const toggleActivityGroup = (group) => {
+  const key = getActivityCollapseKey(group)
+  collapsedActivityKeys[key] = !collapsedActivityKeys[key]
+}
+
+const getActivityPanelId = (group) =>
+  `inventory-activity-panel-${getActivityCollapseKey(group).replace(':', '-')}`
 
 const {
   openSelectKey,
@@ -116,7 +198,6 @@ const {
   toggleSelect,
   selectProductType,
   selectStockStatus,
-  selectPageSize,
   productTypeSelectLabel,
   stockStatusSelectLabel,
 } = useSingleSelectFilters({
@@ -124,7 +205,6 @@ const {
   productTypes,
   isLoadingProductTypes,
   productStockOptions,
-  pageSize,
 })
 
 const {
@@ -154,12 +234,7 @@ const {
 
 const clearSearchFilters = () => {
   Object.assign(searchFilters, createEmptyProductFilters())
-  page.value = 1
 }
-
-watch(searchFilters, () => {
-  page.value = 1
-}, { deep: true })
 
 onMounted(async () => {
   isLoadingProducts.value = true
@@ -200,9 +275,6 @@ onMounted(async () => {
               <h2>全部庫存</h2>
               <p>{{ inventoryRuleText }}</p>
             </div>
-          </div>
-          <div class="inventory-heading-actions">
-            <CountBadge tone="inventory">{{ visibleProductsLabel }}</CountBadge>
           </div>
         </div>
 
@@ -265,61 +337,80 @@ onMounted(async () => {
           </button>
         </section>
 
-        <ProductTable
-          :products="paginatedProducts"
-          :columns="productTableColumns"
-          :product-types="productTypes"
-          :is-loading="isLoadingProducts"
-          :empty-text="emptyProductText"
-          :format-currency="formatCurrency"
-          :get-cost-twd="getCostTwd"
-          :format-date-time="formatDateTime"
-          :strip-html="stripHtml"
-          :sanitize-html="sanitizeHtml"
-          :is-sort-active="isProductSortActive"
-          :get-sort-aria-sort="getProductSortAriaSort"
-          :get-sort-button-label="getProductSortButtonLabel"
-          :get-sort-indicator="getProductSortIndicator"
-          show-stock-actions
-          show-ordered-amount
-          @sort="toggleProductSort"
-          @open-note="openNoteDialog"
-          @stock-in="openTransactionDialog($event, true)"
-          @stock-out="openTransactionDialog($event, false)"
-          @stock-history="openTransactionHistory"
-        />
-
-        <div class="inventory-pagination">
-          <p>{{ paginationSummary }}</p>
-          <div class="inventory-pagination-actions">
-            <div class="inventory-page-size">
-              <span>每頁</span>
-              <CustomSelect
-                tone="inventory"
-                :label="String(pageSize)"
-                :open="isSelectOpen('pageSize')"
-                @toggle="toggleSelect('pageSize')"
-              >
-                <button
-                  v-for="size in pageSizeOptions"
-                  :key="size"
-                  class="custom-select-option"
-                  type="button"
-                  @click="selectPageSize(size)"
-                >
-                  {{ size }}
-                </button>
-              </CustomSelect>
-            </div>
-            <button type="button" :disabled="page <= 1" @click="goToPreviousPage">
-              上一頁
-            </button>
-            <span>{{ page }} / {{ totalPages }}</span>
-            <button type="button" :disabled="page >= totalPages" @click="goToNextPage">
-              下一頁
-            </button>
-          </div>
+        <div class="inventory-tabs" role="tablist" aria-label="庫存活動模式">
+          <button
+            v-for="tab in inventoryTabs"
+            :id="tab.tabId"
+            ref="inventoryTabButtons"
+            :key="tab.mode"
+            class="inventory-tab"
+            :class="{ 'is-active': activeInventoryMode === tab.mode }"
+            type="button"
+            role="tab"
+            :aria-selected="activeInventoryMode === tab.mode"
+            :aria-controls="tab.panelId"
+            :tabindex="activeInventoryMode === tab.mode ? 0 : -1"
+            @click="selectInventoryMode(tab.mode)"
+            @keydown="handleInventoryTabKeydown"
+          >
+            <span>{{ tab.label }}</span>
+            <span class="inventory-tab__count">
+              {{ filteredProductModeCounts[tab.mode] }} 筆
+            </span>
+          </button>
         </div>
+
+        <section
+          v-for="tab in inventoryTabs"
+          v-show="activeInventoryMode === tab.mode"
+          :id="tab.panelId"
+          :key="tab.panelId"
+          class="inventory-tab-panel"
+          role="tabpanel"
+          :aria-labelledby="tab.tabId"
+          tabindex="0"
+        >
+          <template v-if="activeInventoryMode === tab.mode">
+            <MessageBlock v-if="isLoadingProducts" tone="empty" module="inventory">
+              正在載入商品...
+            </MessageBlock>
+
+            <MessageBlock
+              v-else-if="!currentActivityGroups.length"
+              tone="empty"
+              module="inventory"
+            >
+              {{ currentEmptyProductText }}
+            </MessageBlock>
+
+            <div v-else class="inventory-activity-groups">
+              <InventoryActivityGroup
+                v-for="group in currentActivityGroups"
+                :key="getActivityCollapseKey(group)"
+                :group="group"
+                :panel-id="getActivityPanelId(group)"
+                :collapsed="isActivityGroupCollapsed(group)"
+                :columns="productTableColumns"
+                :product-types="productTypes"
+                :format-currency="formatCurrency"
+                :get-cost-twd="getCostTwd"
+                :format-date-time="formatDateTime"
+                :strip-html="stripHtml"
+                :sanitize-html="sanitizeHtml"
+                :is-sort-active="isProductSortActive"
+                :get-sort-aria-sort="getProductSortAriaSort"
+                :get-sort-button-label="getProductSortButtonLabel"
+                :get-sort-indicator="getProductSortIndicator"
+                @toggle="toggleActivityGroup(group)"
+                @sort="toggleProductSort"
+                @open-note="openNoteDialog"
+                @stock-in="openTransactionDialog($event, true)"
+                @stock-out="openTransactionDialog($event, false)"
+                @stock-history="openTransactionHistory"
+              />
+            </div>
+          </template>
+        </section>
       </PanelCard>
     </div>
 

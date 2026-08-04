@@ -115,3 +115,9 @@ XxxPage.vue (orchestration)
 **訂單顯示（`order` 模組 `OrderListPage.vue` + `orderColumns.js`）**
 
 - 訂單「金額 / 訂單總額」一律顯示後端算好的 **`grandTotal`（= 商品小計 `total` + 補運費 `shippingFee`）**，前端不自行加總；明細另列「商品小計 / 補運費」拆解（補運費 > 0 時）。列表排序基準也用 `grandTotal`。詳見 [後端計算顯示值] 原則。
+
+## 功能備註：庫存顯示
+
+- 庫存頁由 `inventory` 模組透過 `GET /api/product-stock-transactions/inventory-products` 一次取得包含 `activityId`、`activityName`、`isPreOrder`、庫存與有效訂購數量的扁平商品清單；切換畫面分類不重複呼叫 API。
+- 畫面先以「現貨／預購」頁籤區分 `isPreOrder`，再於頁籤內依活動分成可收合區塊。名稱、商品類型與庫存狀態篩選及欄位排序皆在前端套用。
+- 庫存頁不使用商品層級分頁；資料切分與活動分組規則集中於 `modules/inventory/utils/inventoryProductGroups.js`，活動區塊 UI 位於 `modules/inventory/components/InventoryActivityGroup.vue`。

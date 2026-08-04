@@ -44,7 +44,7 @@ export const useInventoryProducts = ({ searchFilters, errorMessage }) => {
         const mappedProduct = mapProductFromApi(product)
         return {
           ...mappedProduct,
-          activityName: product.activityName || (mappedProduct.activityId ? `活動 #${mappedProduct.activityId}` : '-'),
+          activityName: product.activityName || '',
           isPreOrder: product.isPreOrder === true,
         }
       })
@@ -56,22 +56,11 @@ export const useInventoryProducts = ({ searchFilters, errorMessage }) => {
     }
   }
 
-  const visibleProducts = computed(() => products.value)
   const filteredProducts = computed(() =>
-    visibleProducts.value.filter((product) => matchesProductFilters(product, searchFilters)),
+    products.value.filter((product) => matchesProductFilters(product, searchFilters)),
   )
   const hasFiltersApplied = computed(() => hasActiveProductFilters(searchFilters))
   const filteredProductsCount = computed(() => filteredProducts.value.length)
-  const totalProductsLabel = computed(() =>
-    hasFiltersApplied.value
-      ? `${filteredProductsCount.value} / ${products.value.length} 筆`
-      : `共 ${products.value.length} 筆`,
-  )
-  const visibleProductsLabel = computed(() =>
-    hasFiltersApplied.value
-      ? `${filteredProductsCount.value} / ${visibleProducts.value.length} 筆`
-      : `共 ${visibleProducts.value.length} 筆`,
-  )
 
   return {
     products,
@@ -80,11 +69,8 @@ export const useInventoryProducts = ({ searchFilters, errorMessage }) => {
     isLoadingProductTypes,
     loadProductTypes,
     loadProducts,
-    visibleProducts,
     filteredProducts,
     hasFiltersApplied,
     filteredProductsCount,
-    totalProductsLabel,
-    visibleProductsLabel,
   }
 }
