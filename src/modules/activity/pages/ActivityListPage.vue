@@ -67,7 +67,7 @@ const productIconPaths = [
   'M9 5V3h6v2',
   'M8 13h8',
 ]
-const pageSizeOptions = [10, 20, 50]
+const pageSizeOptions = [30, 50, 100]
 
 const {
   isConfirmDialogOpen: isDeleteConfirmDialogOpen,

@@ -56,7 +56,7 @@ export const sendOrderConfirmationEmail = async (orderId) => {
 
 export const listOrdersByActivity = async (
   activityId,
-  { page = 1, pageSize = 20, keyword = '', orderStatus = '' } = {},
+  { page = 1, pageSize = 30, keyword = '', orderStatus = '' } = {},
 ) => {
   const query = toQueryString({ page, pageSize, keyword, orderStatus })
   const response = await httpClient.get(`/api/orders/activity/${activityId}${query}`)
@@ -88,7 +88,7 @@ export const listAllOrdersByActivity = async (activityId) => {
   return items
 }
 
-export const listOrders = async ({ page = 1, pageSize = 20, keyword = '', orderStatus = '' } = {}) => {
+export const listOrders = async ({ page = 1, pageSize = 30, keyword = '', orderStatus = '' } = {}) => {
   const query = toQueryString({ page, pageSize, keyword, orderStatus })
   const response = await httpClient.get(`/api/orders${query}`)
   return response?.data || {

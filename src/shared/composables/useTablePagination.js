@@ -1,6 +1,6 @@
 import { computed, ref, watch } from 'vue'
 
-const DEFAULT_PAGE_SIZE = 10
+const DEFAULT_PAGE_SIZE = 30
 
 export const useTablePagination = (sortedItemsRef, { pageSizeOptions } = {}) => {
   const page = ref(1)

@@ -77,7 +77,7 @@ const statusMessage = ref('')
 const errorMessage = ref('')
 const openFilterSelectKey = ref('')
 
-const pageSizeOptions = [10, 20, 50]
+const pageSizeOptions = [30, 50, 100]
 const searchFilters = reactive(createEmptyProductFilters())
 const productStockOptions = [
   {
