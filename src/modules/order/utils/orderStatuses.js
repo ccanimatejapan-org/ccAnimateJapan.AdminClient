@@ -4,7 +4,7 @@ export const ORDER_STATUS_OPTIONS = [
   { value: 3, label: '顧客已付款' },
   { value: 4, label: '預購已完成' },
   { value: 5, label: '商品已入庫' },
-  { value: 6, label: '已出貨給顧客' },
+  { value: 6, label: '已聯絡顧客出貨事項' },
   { value: 7, label: '訂單已完成' },
   { value: 8, label: '訂單已取消' },
 ]
