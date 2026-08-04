@@ -10,8 +10,8 @@ import {
 const makeForm = (overrides = {}) => ({
   name: '  Widget  ',
   japanCost: '100',
-  rate: '0.2',
-  saleRate: '0.24',
+  rate: '0.202',
+  saleRate: '0.225',
   price: '120',
   productTypeId: '3',
   info: '  note  ',
@@ -24,8 +24,8 @@ test('createEmptyProductForm produces the expected defaults', () => {
   assert.deepEqual(createEmptyProductForm(), {
     name: '',
     japanCost: 0,
-    rate: 0.2,
-    saleRate: 0.24,
+    rate: 0.202,
+    saleRate: 0.225,
     price: 0,
     amount: 0,
     isOutStock: false,
@@ -35,14 +35,14 @@ test('createEmptyProductForm produces the expected defaults', () => {
 })
 
 test('getSaleRateFromProduct derives price/japanCost rounded to four decimals', () => {
-  assert.equal(getSaleRateFromProduct({ japanCost: 100, price: 24 }), 0.24)
+  assert.equal(getSaleRateFromProduct({ japanCost: 100, price: 22.5 }), 0.225)
   assert.equal(getSaleRateFromProduct({ japanCost: 3, price: 1 }), 0.3333)
 })
 
-test('getSaleRateFromProduct falls back to product.rate then 0.24 when japanCost <= 0', () => {
+test('getSaleRateFromProduct falls back to product.rate then 0.225 when japanCost <= 0', () => {
   assert.equal(getSaleRateFromProduct({ japanCost: 0, price: 50, rate: 0.3 }), 0.3)
-  assert.equal(getSaleRateFromProduct({ japanCost: 0, price: 50 }), 0.24)
-  assert.equal(getSaleRateFromProduct({ japanCost: -5, price: 50, rate: 'nope' }), 0.24)
+  assert.equal(getSaleRateFromProduct({ japanCost: 0, price: 50 }), 0.225)
+  assert.equal(getSaleRateFromProduct({ japanCost: -5, price: 50, rate: 'nope' }), 0.225)
 })
 
 test('buildProductPayload trims/coerces and adds create-only amount for a spot activity', () => {
@@ -55,7 +55,7 @@ test('buildProductPayload trims/coerces and adds create-only amount for a spot a
     {
       name: 'Widget',
       japanCost: 100,
-      rate: 0.2,
+      rate: 0.202,
       price: 120,
       productTypeId: 3,
       info: 'note',

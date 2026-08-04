@@ -4,8 +4,8 @@ import { toNumber } from '@/modules/activityProduct/utils/productMapper'
 export const createEmptyProductForm = () => ({
   name: '',
   japanCost: 0,
-  rate: 0.2,
-  saleRate: 0.24,
+  rate: 0.202,
+  saleRate: 0.225,
   price: 0,
   amount: 0,
   isOutStock: false,

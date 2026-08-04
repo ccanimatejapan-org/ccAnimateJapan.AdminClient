@@ -1,8 +1,8 @@
 import { reactive, watch } from 'vue'
 
 const STORAGE_KEY = 'cc-admin:activity-product-rate-defaults'
-const DEFAULT_RATE = 0.2
-const DEFAULT_SALE_RATE = 0.24
+const DEFAULT_RATE = 0.202
+const DEFAULT_SALE_RATE = 0.225
 
 // Per-activity default cost/sale rates, persisted to localStorage keyed by activity id.
 // `loadActivityRateDefaults` is called by the page on mount and on activity change; a watch
