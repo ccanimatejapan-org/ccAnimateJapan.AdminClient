@@ -16,6 +16,7 @@ import {
   toShippingShareRuleText,
   toGroupBuyStatusText,
 } from '@/modules/activity/utils/activityMapper'
+import { ACTIVITY_FORM_MODES } from '@/modules/activity/utils/activityFormRules'
 
 defineProps({
   form: {
@@ -25,6 +26,10 @@ defineProps({
   editingActivityId: {
     type: [Number, String],
     default: null,
+  },
+  formMode: {
+    type: String,
+    default: ACTIVITY_FORM_MODES.create,
   },
   isSaving: {
     type: Boolean,
@@ -78,7 +83,7 @@ defineProps({
     type: Function,
     required: true,
   },
-  getPrepRangeLabel: {
+  getOfficialShippingRangeLabel: {
     type: Function,
     required: true,
   },
@@ -151,7 +156,7 @@ defineEmits([
     <form class="activity-dialog" novalidate @submit.prevent="$emit('submit')">
       <div class="dialog-heading">
         <div>
-          <h2>{{ editingActivityId ? '編輯活動' : '新增活動' }}</h2>
+          <h2>{{ formMode === ACTIVITY_FORM_MODES.copy ? '複製活動' : editingActivityId ? '編輯活動' : '新增活動' }}</h2>
         </div>
         <IconButton variant="soft-close" aria-label="關閉" @click="$emit('close')">×</IconButton>
       </div>
@@ -182,29 +187,30 @@ defineEmits([
           @close="$emit('close-range')"
         />
         <DateRangePicker
-          v-if="!form.isPreOrder"
-          label="準備期間"
-          :open="isRangeOpen('prep')"
-          :range-label="getPrepRangeLabel()"
-          :month-label="getRangeMonthLabel('prep')"
+          v-if="form.isPreOrder"
+          label="官方出貨期間"
+          :open="isRangeOpen('officialShipping')"
+          :range-label="getOfficialShippingRangeLabel()"
+          :month-label="getRangeMonthLabel('officialShipping')"
           :weekdays="calendarWeekdays"
-          :days="getRangeCalendarDays('prep')"
-          :start-label="getRangeStartLabel('prep')"
-          :end-label="getRangeEndLabel('prep')"
-          :is-day-start="(date) => isRangeDayStart('prep', date)"
-          :is-day-end="(date) => isRangeDayEnd('prep', date)"
-          :is-day-in-range="(date) => isRangeDayInRange('prep', date)"
-          :is-day-selected="(date) => isRangeDaySelected('prep', date)"
-          @toggle="$emit('toggle-range', 'prep')"
-          @shift="$emit('shift-range', 'prep', $event)"
-          @select="$emit('select-range-date', 'prep', $event)"
+          :days="getRangeCalendarDays('officialShipping')"
+          :start-label="getRangeStartLabel('officialShipping')"
+          :end-label="getRangeEndLabel('officialShipping')"
+          :is-day-start="(date) => isRangeDayStart('officialShipping', date)"
+          :is-day-end="(date) => isRangeDayEnd('officialShipping', date)"
+          :is-day-in-range="(date) => isRangeDayInRange('officialShipping', date)"
+          :is-day-selected="(date) => isRangeDaySelected('officialShipping', date)"
+          @toggle="$emit('toggle-range', 'officialShipping')"
+          @shift="$emit('shift-range', 'officialShipping', $event)"
+          @select="$emit('select-range-date', 'officialShipping', $event)"
           @close="$emit('close-range')"
         />
         <FormField as="div" label="活動狀態">
           <CustomSelect
             :label="getStatusSelectLabel()"
             :open="isSelectOpen('status')"
-            @toggle="$emit('toggle-select', 'status')"
+            :disabled="formMode === ACTIVITY_FORM_MODES.copy"
+            @toggle="$emit('toggle-select', 'status', formMode === ACTIVITY_FORM_MODES.copy)"
           >
             <button
               v-for="statusOption in activityStatusOptions"
@@ -249,7 +255,8 @@ defineEmits([
           <CustomSelect
             :label="toGroupBuyStatusText(form.groupBuyStatus)"
             :open="isSelectOpen('groupBuyStatus')"
-            @toggle="$emit('toggle-select', 'groupBuyStatus')"
+            :disabled="formMode === ACTIVITY_FORM_MODES.copy"
+            @toggle="$emit('toggle-select', 'groupBuyStatus', formMode === ACTIVITY_FORM_MODES.copy)"
           >
             <button
               v-for="statusOption in groupBuyStatusOptions"
@@ -373,7 +380,7 @@ defineEmits([
 
       <div class="dialog-actions">
         <AppButton
-          v-if="editingActivityId"
+          v-if="editingActivityId && formMode !== ACTIVITY_FORM_MODES.copy"
           class="danger-dialog-button delete-dialog-button--muted"
           pill
           :disabled="isSaving || deletingActivityId === editingActivityId"
@@ -383,7 +390,7 @@ defineEmits([
         </AppButton>
         <AppButton pill :disabled="isSaving" @click="$emit('close')">取消</AppButton>
         <AppButton variant="primary" pill elevated type="submit" :disabled="isSaving">
-          {{ isSaving ? '儲存中...' : '儲存' }}
+          {{ isSaving ? '儲存中...' : formMode === ACTIVITY_FORM_MODES.copy ? '確認複製' : '儲存' }}
         </AppButton>
       </div>
     </form>

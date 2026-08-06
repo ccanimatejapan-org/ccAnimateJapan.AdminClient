@@ -38,8 +38,8 @@ export const createEmptyActivityFilters = () => ({
   address: '',
   activityDateStart: '',
   activityDateEnd: '',
-  prepDateStart: '',
-  prepDateEnd: '',
+  officialShippingStartDate: '',
+  officialShippingEndDate: '',
 })
 
 export const hasActiveActivityFilters = (filters) =>
@@ -50,8 +50,8 @@ export const hasActiveActivityFilters = (filters) =>
       normalizeText(filters.address) ||
       filters.activityDateStart ||
       filters.activityDateEnd ||
-      filters.prepDateStart ||
-      filters.prepDateEnd,
+      filters.officialShippingStartDate ||
+      filters.officialShippingEndDate,
   )
 
 export const matchesActivityFilters = (activity, filters) => {
@@ -94,17 +94,21 @@ export const matchesActivityFilters = (activity, filters) => {
     return false
   }
 
-  const prepDateStart = parseFilterDate(filters.prepDateStart, 'start')
-  const prepDateEnd = parseFilterDate(filters.prepDateEnd, 'end')
-  if (
-    !overlapsRange(
-      activity.raw?.prepareStartTime,
-      activity.raw?.prepareEndTime,
-      prepDateStart,
-      prepDateEnd,
-    )
-  ) {
-    return false
+  const officialShippingStartDate = parseFilterDate(filters.officialShippingStartDate, 'start')
+  const officialShippingEndDate = parseFilterDate(filters.officialShippingEndDate, 'end')
+  if (officialShippingStartDate || officialShippingEndDate) {
+    if (activity.isPreOrder !== true) return false
+
+    if (
+      !overlapsRange(
+        activity.raw?.officialShippingStartTime,
+        activity.raw?.officialShippingEndTime,
+        officialShippingStartDate,
+        officialShippingEndDate,
+      )
+    ) {
+      return false
+    }
   }
 
   return true

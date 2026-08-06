@@ -1,6 +1,5 @@
 import { ref } from 'vue'
 import {
-  copyActivity as copyActivityApi,
   deleteActivity as deleteActivityApi,
   listActivities as listActivitiesApi,
   listActivityTypes as listActivityTypesApi,
@@ -23,7 +22,6 @@ export const useActivityCrud = ({ requestConfirm }) => {
   const isLoadingDeletedActivities = ref(false)
   const isLoadingActivityTypes = ref(false)
   const isLoadingAnimateTypes = ref(false)
-  const copyingActivityId = ref(null)
   const deletingActivityId = ref(null)
   const restoringActivityId = ref(null)
   const statusMessage = ref('')
@@ -116,32 +114,6 @@ export const useActivityCrud = ({ requestConfirm }) => {
     restoringActivityId.value = null
   }
 
-  const copyActivity = async (activity) => {
-    if (copyingActivityId.value !== null) {
-      return
-    }
-
-    if (!getAdminToken()) {
-      errorMessage.value = '登入狀態已失效，請重新登入後再複製活動。'
-      return
-    }
-
-    copyingActivityId.value = activity.id
-    errorMessage.value = ''
-    statusMessage.value = ''
-
-    try {
-      const response = await copyActivityApi(activity.id)
-      const copiedActivity = mapActivityFromApi(response?.data)
-      activities.value.unshift(copiedActivity)
-      statusMessage.value = '複製活動成功。'
-    } catch (err) {
-      errorMessage.value = err.message || '複製活動失敗。'
-    } finally {
-      copyingActivityId.value = null
-    }
-  }
-
   const deleteActivity = async (activity) => {
     if (!getAdminToken()) {
       errorMessage.value = '登入狀態已失效，請重新登入後再刪除活動。'
@@ -205,7 +177,6 @@ export const useActivityCrud = ({ requestConfirm }) => {
     isLoadingDeletedActivities,
     isLoadingActivityTypes,
     isLoadingAnimateTypes,
-    copyingActivityId,
     deletingActivityId,
     restoringActivityId,
     statusMessage,
@@ -220,7 +191,6 @@ export const useActivityCrud = ({ requestConfirm }) => {
     loadAnimateTypes,
     openTrashDialog,
     closeTrashDialog,
-    copyActivity,
     deleteActivity,
     restoreActivity,
   }

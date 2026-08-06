@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import ActivityDeleteConfirmDialog from '@/modules/activity/components/ActivityDeleteConfirmDialog.vue'
 import ActivityFormDialog from '@/modules/activity/components/ActivityFormDialog.vue'
@@ -20,6 +20,11 @@ import { useActivityFilters } from '@/modules/activity/composables/useActivityFi
 import { createActivityTableColumns } from '@/modules/activity/utils/activityTableColumns'
 import { buildActivityFormUrl } from '@/modules/activity/utils/activityFormUrl'
 import { activityStatusOptions } from '@/modules/activity/utils/activityMapper'
+import {
+  getActivityListTabs,
+  filterActivitiesByActivityListTab,
+  DEFAULT_ACTIVITY_LIST_TAB_KEY,
+} from '@/modules/activity/utils/activityListTabs'
 import { useConfirmDialog } from '@/shared/composables/useConfirmDialog'
 import { useNoteDialog } from '@/shared/composables/useNoteDialog'
 import { useDialogScrollLock } from '@/shared/composables/useDialogScrollLock'
@@ -85,7 +90,6 @@ const {
   isLoadingDeletedActivities,
   isLoadingActivityTypes,
   isLoadingAnimateTypes,
-  copyingActivityId,
   deletingActivityId,
   restoringActivityId,
   statusMessage,
@@ -99,7 +103,6 @@ const {
   loadAnimateTypes,
   openTrashDialog,
   closeTrashDialog,
-  copyActivity,
   deleteActivity,
   restoreActivity,
 } = useActivityCrud({ requestConfirm })
@@ -139,11 +142,11 @@ const {
   isFilterRangeDaySelected,
   handleFilterRangeSelect,
   filterActivityRangeLabel,
-  filterPrepRangeLabel,
+  filterOfficialShippingRangeLabel,
   filterActivityStartLabel,
   filterActivityEndLabel,
-  filterPrepStartLabel,
-  filterPrepEndLabel,
+  filterOfficialShippingStartLabel,
+  filterOfficialShippingEndLabel,
 } = useActivityFilters({
   activities,
   activityTypes,
@@ -154,6 +157,7 @@ const {
 
 const {
   form,
+  formMode,
   isDialogOpen,
   editingActivityId,
   editingActivity,
@@ -175,7 +179,7 @@ const {
   getRangeStartLabel,
   getRangeEndLabel,
   getActivityRangeLabel,
-  getPrepRangeLabel,
+  getOfficialShippingRangeLabel,
   handleFormRangeSelect,
   isSelectOpen,
   toggleCustomSelect,
@@ -185,6 +189,7 @@ const {
   getStatusSelectLabel,
   openCreateDialog,
   openEditDialog,
+  openCopyDialog,
   closeDialog,
   saveActivity,
 } = useActivityForm({
@@ -203,14 +208,35 @@ const activityTableColumns = createActivityTableColumns({
   stripHtml,
 })
 
+const activeActivityListTabKey = ref(DEFAULT_ACTIVITY_LIST_TAB_KEY)
+const activityTabButtons = ref([])
+const activityTabs = computed(() =>
+  getActivityListTabs({
+    filteredActivities: filteredActivities.value,
+    totalActivities: activities.value,
+    activeTabKey: activeActivityListTabKey.value,
+  }),
+)
+
+const activeActivityListTab = computed(
+  () => activityTabs.value.find((tab) => tab.isActive) || activityTabs.value[0],
+)
+
+const currentTabFilteredActivities = computed(() =>
+  filterActivitiesByActivityListTab(
+    filteredActivities.value,
+    activeActivityListTab.value?.key,
+  ),
+)
+
 const {
-  sortedItems: sortedActivities,
+  sortedItems: sortedCurrentTabActivities,
   isSortActive: isActivitySortActive,
   toggleSort: toggleActivitySort,
   getSortAriaSort: getActivitySortAriaSort,
   getSortButtonLabel: getActivitySortButtonLabel,
   getSortIndicator: getActivitySortIndicator,
-} = useTableSort(filteredActivities, activityTableColumns, {
+} = useTableSort(currentTabFilteredActivities, activityTableColumns, {
   key: 'activityPeriod',
   direction: 'desc',
 })
@@ -222,15 +248,64 @@ const {
   paginatedItems: paginatedActivities,
   goToPreviousPage,
   goToNextPage,
-} = useTablePagination(sortedActivities, { pageSizeOptions })
+} = useTablePagination(sortedCurrentTabActivities, { pageSizeOptions })
 
 const paginationSummary = computed(() => {
-  if (!sortedActivities.value.length) return '目前沒有符合條件的活動'
+  if (isLoading.value) return '正在讀取活動資料...'
+
+  if (!sortedCurrentTabActivities.value.length) {
+    return activeActivityListTab.value?.emptyText || '目前沒有符合條件的活動'
+  }
 
   const start = (page.value - 1) * pageSize.value + 1
-  const end = Math.min(start + pageSize.value - 1, sortedActivities.value.length)
-  return `第 ${start}-${end} 筆，共 ${sortedActivities.value.length} 筆`
+  const end = Math.min(
+    start + pageSize.value - 1,
+    sortedCurrentTabActivities.value.length,
+  )
+  return `第 ${start}-${end} 筆，共 ${sortedCurrentTabActivities.value.length} 筆`
 })
+
+const selectActivityTab = (tabKey) => {
+  const targetTab = activityTabs.value.find((tab) => tab.key === tabKey)
+
+  if (!targetTab || targetTab.isActive) return
+
+  activeActivityListTabKey.value = targetTab.key
+  page.value = 1
+}
+
+const selectActivityTabByIndex = (index) => {
+  const totalTabs = activityTabs.value.length
+  if (!totalTabs) return
+
+  const normalizedIndex = (index + totalTabs) % totalTabs
+  const targetTab = activityTabs.value[normalizedIndex]
+
+  selectActivityTab(targetTab?.key)
+
+  nextTick(() => {
+    activityTabButtons.value[normalizedIndex]?.focus()
+  })
+}
+
+const handleActivityTabKeydown = (event) => {
+  const activeIndex = activityTabs.value.findIndex((tab) => tab.isActive)
+  const currentIndex = activeIndex >= 0 ? activeIndex : 0
+
+  if (event.key === 'ArrowRight') {
+    event.preventDefault()
+    selectActivityTabByIndex(currentIndex + 1)
+  } else if (event.key === 'ArrowLeft') {
+    event.preventDefault()
+    selectActivityTabByIndex(currentIndex - 1)
+  } else if (event.key === 'Home') {
+    event.preventDefault()
+    selectActivityTabByIndex(0)
+  } else if (event.key === 'End') {
+    event.preventDefault()
+    selectActivityTabByIndex(activityTabs.value.length - 1)
+  }
+}
 
 const selectPageSize = (size) => {
   pageSize.value = Number(size)
@@ -453,21 +528,21 @@ watch(
           />
 
           <DateRangePicker
-            label="準備時間"
-            :open="isFilterRangeOpen('prep')"
-            :range-label="filterPrepRangeLabel"
-            :month-label="getFilterRangeMonthLabel('prep')"
+            label="官方出貨期間"
+            :open="isFilterRangeOpen('officialShipping')"
+            :range-label="filterOfficialShippingRangeLabel"
+            :month-label="getFilterRangeMonthLabel('officialShipping')"
             :weekdays="calendarWeekdays"
-            :days="getFilterRangeCalendarDays('prep')"
-            :start-label="filterPrepStartLabel"
-            :end-label="filterPrepEndLabel"
-            :is-day-start="(date) => isFilterRangeDayStart('prep', date)"
-            :is-day-end="(date) => isFilterRangeDayEnd('prep', date)"
-            :is-day-in-range="(date) => isFilterRangeDayInRange('prep', date)"
-            :is-day-selected="(date) => isFilterRangeDaySelected('prep', date)"
-            @toggle="toggleFilterRangePicker('prep')"
-            @shift="shiftFilterRangeMonth('prep', $event)"
-            @select="handleFilterRangeSelect('prep', $event)"
+            :days="getFilterRangeCalendarDays('officialShipping')"
+            :start-label="filterOfficialShippingStartLabel"
+            :end-label="filterOfficialShippingEndLabel"
+            :is-day-start="(date) => isFilterRangeDayStart('officialShipping', date)"
+            :is-day-end="(date) => isFilterRangeDayEnd('officialShipping', date)"
+            :is-day-in-range="(date) => isFilterRangeDayInRange('officialShipping', date)"
+            :is-day-selected="(date) => isFilterRangeDaySelected('officialShipping', date)"
+            @toggle="toggleFilterRangePicker('officialShipping')"
+            @shift="shiftFilterRangeMonth('officialShipping', $event)"
+            @select="handleFilterRangeSelect('officialShipping', $event)"
             @close="closeFilterRangePicker()"
           />
         </div>
@@ -482,69 +557,104 @@ watch(
         </div>
       </section>
 
-      <ActivityTable
-        :activities="paginatedActivities"
-        :columns="activityTableColumns"
-        :is-loading="isLoading"
-        :copying-activity-id="copyingActivityId"
-        :edit-icon-paths="editIconPaths"
-        :copy-icon-paths="copyIconPaths"
-        :form-link-icon-paths="formLinkIconPaths"
-        :product-icon-paths="productIconPaths"
-        :get-activity-type-name="getActivityTypeName"
-        :get-animate-type-name="getAnimateTypeName"
-        :strip-html="stripHtml"
-        :sanitize-html="sanitizeHtml"
-        :is-sort-active="isActivitySortActive"
-        :get-sort-aria-sort="getActivitySortAriaSort"
-        :get-sort-button-label="getActivitySortButtonLabel"
-        :get-sort-indicator="getActivitySortIndicator"
-        @sort="toggleActivitySort"
-        @open-note="openNoteDialog"
-        @edit="openEditDialog"
-        @copy="copyActivity"
-        @copy-form-link="copyActivityFormLink"
-        @manage-products="openProductManagement"
-      />
-
-      <div class="activity-pagination" aria-label="活動分頁">
-        <div class="activity-pagination-summary">{{ paginationSummary }}</div>
-
-        <div class="activity-pagination-actions">
-          <div class="activity-page-size">
-            <span>每頁</span>
-            <CustomSelect
-              :label="String(pageSize)"
-              :open="isFilterSelectOpen('pageSize')"
-              @toggle="toggleFilterSelect('pageSize')"
-            >
-              <button
-                v-for="size in pageSizeOptions"
-                :key="size"
-                class="custom-select-option"
-                type="button"
-                @click="selectPageSize(size)"
-              >
-                {{ size }}
-              </button>
-            </CustomSelect>
-          </div>
-
-          <AppButton pill :disabled="page <= 1" @click="goToPreviousPage">
-            上一頁
-          </AppButton>
-          <span class="activity-page-indicator">{{ page }} / {{ totalPages }}</span>
-          <AppButton pill :disabled="page >= totalPages" @click="goToNextPage">
-            下一頁
-          </AppButton>
-        </div>
+      <div class="activity-tabs" role="tablist" aria-label="活動狀態">
+        <button
+          v-for="tab in activityTabs"
+          :key="tab.key"
+          :id="tab.tabId"
+          ref="activityTabButtons"
+          class="activity-tab"
+          :class="{ 'is-active': tab.isActive }"
+          type="button"
+          role="tab"
+          :aria-selected="tab.isActive"
+          :aria-controls="tab.panelId"
+          :tabindex="tab.isActive ? 0 : -1"
+          @click="selectActivityTab(tab.key)"
+          @keydown="handleActivityTabKeydown"
+        >
+          <span>{{ tab.label }}</span>
+          <span class="activity-tab__count">{{ tab.count }} 筆</span>
+        </button>
       </div>
+
+      <section
+        v-for="tab in activityTabs"
+        v-show="tab.isActive"
+        :id="tab.panelId"
+        :key="tab.key"
+        class="activity-tab-panel"
+        role="tabpanel"
+        :aria-labelledby="tab.tabId"
+        :tabindex="tab.isActive ? 0 : -1"
+      >
+        <template v-if="tab.isActive">
+          <ActivityTable
+            :activities="paginatedActivities"
+            :columns="activityTableColumns"
+            :is-loading="isLoading"
+            :empty-text="tab.emptyText"
+            :edit-icon-paths="editIconPaths"
+            :copy-icon-paths="copyIconPaths"
+            :form-link-icon-paths="formLinkIconPaths"
+            :product-icon-paths="productIconPaths"
+            :get-activity-type-name="getActivityTypeName"
+            :get-animate-type-name="getAnimateTypeName"
+            :strip-html="stripHtml"
+            :sanitize-html="sanitizeHtml"
+            :is-sort-active="isActivitySortActive"
+            :get-sort-aria-sort="getActivitySortAriaSort"
+            :get-sort-button-label="getActivitySortButtonLabel"
+            :get-sort-indicator="getActivitySortIndicator"
+            @sort="toggleActivitySort"
+            @open-note="openNoteDialog"
+            @edit="openEditDialog"
+            @copy="openCopyDialog"
+            @copy-form-link="copyActivityFormLink"
+            @manage-products="openProductManagement"
+          />
+
+          <div class="activity-pagination" aria-label="活動分頁">
+            <div class="activity-pagination-summary">{{ paginationSummary }}</div>
+
+            <div class="activity-pagination-actions">
+              <div class="activity-page-size">
+                <span>每頁</span>
+                <CustomSelect
+                  :label="String(pageSize)"
+                  :open="isFilterSelectOpen('pageSize')"
+                  @toggle="toggleFilterSelect('pageSize')"
+                >
+                  <button
+                    v-for="size in pageSizeOptions"
+                    :key="size"
+                    class="custom-select-option"
+                    type="button"
+                    @click="selectPageSize(size)"
+                  >
+                    {{ size }}
+                  </button>
+                </CustomSelect>
+              </div>
+
+              <AppButton pill :disabled="page <= 1" @click="goToPreviousPage">
+                上一頁
+              </AppButton>
+              <span class="activity-page-indicator">{{ page }} / {{ totalPages }}</span>
+              <AppButton pill :disabled="page >= totalPages" @click="goToNextPage">
+                下一頁
+              </AppButton>
+            </div>
+          </div>
+        </template>
+      </section>
     </PanelCard>
 
     <ActivityFormDialog
       v-if="isDialogOpen"
       :form="form"
       :editing-activity-id="editingActivityId"
+      :form-mode="formMode"
       :is-saving="isSaving"
       :deleting-activity-id="deletingActivityId"
       :error-message="errorMessage"
@@ -558,7 +668,7 @@ watch(
       :calendar-weekdays="calendarWeekdays"
       :is-range-open="isRangeOpen"
       :get-activity-range-label="getActivityRangeLabel"
-      :get-prep-range-label="getPrepRangeLabel"
+      :get-official-shipping-range-label="getOfficialShippingRangeLabel"
       :get-range-month-label="getRangeMonthLabel"
       :get-range-calendar-days="getRangeCalendarDays"
       :is-range-day-start="isRangeDayStart"

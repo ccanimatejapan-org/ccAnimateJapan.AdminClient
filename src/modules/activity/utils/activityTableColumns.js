@@ -62,10 +62,13 @@ export const createActivityTableColumns = ({ getActivityTypeName, getAnimateType
     getValue: (activity) => getAnimateTypeName(activity.animateTypeId),
   },
   {
-    key: 'prepPeriod',
-    label: '準備期間',
+    key: 'officialShippingPeriod',
+    label: '官方出貨期間',
     sortable: true,
-    getValue: (activity) => `${activity.prepStartDate || ''} ${activity.prepEndDate || ''}`,
+    getValue: (activity) =>
+      activity.isPreOrder
+        ? `${activity.officialShippingStartDate || ''} ${activity.officialShippingEndDate || ''}`
+        : '-',
   },
   {
     key: 'info',

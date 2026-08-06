@@ -12,11 +12,12 @@ const makeActivity = (overrides = {}) => ({
   address: '東京巨蛋',
   activityTypeId: 5,
   animateTypeId: 8,
+  isPreOrder: true,
   raw: {
     activeStartTime: '2024-05-12T00:00',
     activeEndTime: '2024-05-15T00:00',
-    prepareStartTime: '2024-05-01T00:00',
-    prepareEndTime: '2024-05-05T00:00',
+    officialShippingStartTime: '2024-08-01T00:00',
+    officialShippingEndTime: '2024-08-05T00:00',
   },
   ...overrides,
 })
@@ -29,8 +30,8 @@ test('createEmptyActivityFilters returns blank defaults', () => {
     address: '',
     activityDateStart: '',
     activityDateEnd: '',
-    prepDateStart: '',
-    prepDateEnd: '',
+    officialShippingStartDate: '',
+    officialShippingEndDate: '',
   })
 })
 
@@ -40,6 +41,10 @@ test('hasActiveActivityFilters detects any populated filter', () => {
   assert.equal(hasActiveActivityFilters({ ...createEmptyActivityFilters(), activityTypeIds: [1] }), true)
   assert.equal(
     hasActiveActivityFilters({ ...createEmptyActivityFilters(), activityDateStart: '2024-05-01' }),
+    true,
+  )
+  assert.equal(
+    hasActiveActivityFilters({ ...createEmptyActivityFilters(), officialShippingStartDate: '2024-08-01' }),
     true,
   )
 })
@@ -80,4 +85,55 @@ test('matchesActivityFilters filters by overlapping activity date range', () => 
 
   assert.equal(matchesActivityFilters(makeActivity(), overlapping), true)
   assert.equal(matchesActivityFilters(makeActivity(), disjoint), false)
+})
+
+test('matchesActivityFilters filters official shipping only for pre-order activities with a period', () => {
+  const officialShippingFilter = {
+    ...createEmptyActivityFilters(),
+    officialShippingStartDate: '2024-08-03',
+    officialShippingEndDate: '2024-08-10',
+  }
+
+  assert.equal(matchesActivityFilters(makeActivity(), officialShippingFilter), true)
+  assert.equal(
+    matchesActivityFilters(
+      makeActivity({
+        isPreOrder: false,
+        raw: {
+          activeStartTime: '2024-05-12T00:00',
+          activeEndTime: '2024-05-15T00:00',
+          officialShippingStartTime: '2024-08-01T00:00',
+          officialShippingEndTime: '2024-08-05T00:00',
+        },
+      }),
+      officialShippingFilter,
+    ),
+    false,
+  )
+  assert.equal(
+    matchesActivityFilters(
+      makeActivity({
+        raw: {
+          activeStartTime: '2024-05-12T00:00',
+          activeEndTime: '2024-05-15T00:00',
+        },
+      }),
+      officialShippingFilter,
+    ),
+    false,
+  )
+  assert.equal(
+    matchesActivityFilters(
+      makeActivity({
+        raw: {
+          activeStartTime: '2024-05-12T00:00',
+          activeEndTime: '2024-05-15T00:00',
+          officialShippingStartTime: '2024-09-01T00:00',
+          officialShippingEndTime: '2024-09-05T00:00',
+        },
+      }),
+      officialShippingFilter,
+    ),
+    false,
+  )
 })

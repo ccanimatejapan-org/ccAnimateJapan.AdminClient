@@ -1,52 +1,34 @@
 import { onBeforeUnmount, reactive, ref, watch } from 'vue'
-import { createActivity as createActivityApi, updateActivity as updateActivityApi } from '@/modules/activity/api/activityApi'
+import {
+  copyActivity as copyActivityApi,
+  createActivity as createActivityApi,
+  updateActivity as updateActivityApi,
+} from '@/modules/activity/api/activityApi'
 import { useActivityRangePicker } from '@/modules/activity/composables/useActivityRangePicker'
 import { useImageUpload } from '@/shared/composables/useImageUpload'
 import {
-  ActivityEnum,
   GroupBuyStatus,
   ShippingMode,
-  ShippingShareRule,
-  activityStatusOptions,
-  dateTimeToIso,
   deriveShareRule,
   mapActivityFromApi,
-  normalizeActivityStatus,
   toActivityStatusText,
-  toInputDateTime,
 } from '@/modules/activity/utils/activityMapper'
-import { appendIfValue } from '@/shared/utils/formData'
-import { sanitizeHtml } from '@/shared/utils/html'
-import { formatRequiredFieldsMessage, isBlankValue } from '@/shared/utils/validation'
+import {
+  ACTIVITY_FORM_MODES,
+  buildActivityFormDataFromEntries,
+  buildActivityFormPayloadEntries,
+  createEmptyActivityForm,
+  formatActivityFormValidationMessage,
+  getGroupBuyStatusForActivityKind,
+  mapActivityToActivityFormValues,
+  normalizeActivityFormValuesForMode,
+  validateActivityFormValues,
+} from '@/modules/activity/utils/activityFormRules'
 import { getAdminToken } from '@/shared/stores/authSession'
 
-const emptyForm = {
-  activityStartDate: '',
-  activityEndDate: '',
-  prepStartDate: '',
-  prepEndDate: '',
-  name: '',
-  imageUrl: '',
-  address: '',
-  activityTypeId: '',
-  animateTypeId: '',
-  info: '',
-  status: ActivityEnum.NotStarted,
-  isPreOrder: false,
-  shippingMode: ShippingMode.NoShipping,
-  groupBuyThreshold: 0,
-  perItemShipping: 0,
-  shippingCost: 0,
-  freeShippingThreshold: 0,
-  allowCustomerShippingTopUp: false,
-  shippingShareRule: ShippingShareRule.ByQuantity,
-  groupBuyStatus: GroupBuyStatus.NotRequired,
-}
-
-// Activity create/edit form: holds the reactive form, composes image upload + the form
-// date-range picker, validates, builds the multipart payload, and saves (updating the
-// shared activities list in place). Type-name lookups, loading flags and status/error
-// messages are injected from the page / useActivityCrud.
+// 活動新增／編輯／複製共用表單：管理 reactive form、圖片上傳與日期範圍選擇，
+// 並負責驗證、建立 multipart payload 及儲存後更新共用活動清單。
+// 類型名稱查詢、載入狀態及成功／錯誤訊息由頁面與 useActivityCrud 注入。
 export const useActivityForm = ({
   activities,
   isLoadingActivityTypes,
@@ -56,10 +38,13 @@ export const useActivityForm = ({
   getActivityTypeName,
   getAnimateTypeName,
 }) => {
-  const form = reactive({ ...emptyForm })
+  const form = reactive(createEmptyActivityForm())
   const isDialogOpen = ref(false)
+  const formMode = ref(ACTIVITY_FORM_MODES.create)
   const editingActivityId = ref(null)
   const editingActivity = ref(null)
+  const copySourceActivityId = ref(null)
+  const copySourceActivity = ref(null)
   const isSaving = ref(false)
   const openSelectKey = ref('')
 
@@ -79,7 +64,7 @@ export const useActivityForm = ({
     getRangeStartLabel,
     getRangeEndLabel,
     getActivityRangeLabel,
-    getPrepRangeLabel,
+    getOfficialShippingRangeLabel,
     selectRangeDate,
   } = useActivityRangePicker(form, {
     onToggle: () => {
@@ -116,13 +101,18 @@ export const useActivityForm = ({
 
   const isSelectOpen = (key) => openSelectKey.value === key
 
+  const isCopyMode = () => formMode.value === ACTIVITY_FORM_MODES.copy
+  const isCopyForcedSelectKey = (key) => isCopyMode() && ['status', 'groupBuyStatus'].includes(key)
+
   const toggleCustomSelect = (key, disabled = false) => {
-    if (disabled) return
+    if (disabled || isCopyForcedSelectKey(key)) return
     openRangeKey.value = ''
     openSelectKey.value = isSelectOpen(key) ? '' : key
   }
 
   const selectCustomOption = (key, value) => {
+    if (isCopyForcedSelectKey(key)) return
+
     form[key] = value
     openSelectKey.value = ''
 
@@ -135,10 +125,14 @@ export const useActivityForm = ({
     () => form.isPreOrder,
     (isPreOrder) => {
       if (!isPreOrder) {
+        form.officialShippingStartDate = ''
+        form.officialShippingEndDate = ''
         form.groupBuyStatus = GroupBuyStatus.NotRequired
         form.shippingMode = ShippingMode.NoShipping
         form.shippingShareRule = deriveShareRule(ShippingMode.NoShipping)
         form.allowCustomerShippingTopUp = false
+      } else if (isCopyMode()) {
+        form.groupBuyStatus = getGroupBuyStatusForActivityKind(true)
       } else if (form.groupBuyStatus === GroupBuyStatus.NotRequired) {
         form.groupBuyStatus = GroupBuyStatus.Recruiting
       }
@@ -154,47 +148,41 @@ export const useActivityForm = ({
 
   const resetForm = () => {
     resetImageUpload()
-    Object.assign(form, emptyForm)
+    Object.assign(form, createEmptyActivityForm())
+    formMode.value = ACTIVITY_FORM_MODES.create
     editingActivityId.value = null
     editingActivity.value = null
+    copySourceActivityId.value = null
+    copySourceActivity.value = null
     openSelectKey.value = ''
     openRangeKey.value = ''
   }
 
   const openCreateDialog = () => {
     resetForm()
+    formMode.value = ACTIVITY_FORM_MODES.create
     statusMessage.value = ''
     errorMessage.value = ''
     isDialogOpen.value = true
   }
 
   const openEditDialog = (activity) => {
-    const raw = activity.raw || {}
     resetForm()
+    formMode.value = ACTIVITY_FORM_MODES.edit
     editingActivityId.value = activity.id
     editingActivity.value = activity
-    Object.assign(form, {
-      activityStartDate: toInputDateTime(raw.activeStartTime),
-      activityEndDate: toInputDateTime(raw.activeEndTime),
-      prepStartDate: toInputDateTime(raw.prepareStartTime),
-      prepEndDate: toInputDateTime(raw.prepareEndTime),
-      name: raw.name || '',
-      imageUrl: raw.imageUrl || '',
-      address: raw.address || '',
-      activityTypeId: raw.activityTypeId || '',
-      animateTypeId: raw.animateTypeId || '',
-      info: raw.info || '',
-      status: normalizeActivityStatus(raw.status),
-      isPreOrder: raw.isPreOrder === true,
-      shippingMode: activity.shippingMode ?? ShippingMode.NoShipping,
-      groupBuyThreshold: activity.groupBuyThreshold ?? 0,
-      perItemShipping: activity.perItemShipping ?? 0,
-      shippingCost: activity.shippingCost ?? 0,
-      freeShippingThreshold: activity.freeShippingThreshold ?? 0,
-      allowCustomerShippingTopUp: activity.allowCustomerShippingTopUp === true,
-      shippingShareRule: deriveShareRule(activity.shippingMode ?? ShippingMode.NoShipping),
-      groupBuyStatus: activity.groupBuyStatus ?? GroupBuyStatus.NotRequired,
-    })
+    Object.assign(form, mapActivityToActivityFormValues(activity, { mode: ACTIVITY_FORM_MODES.edit }))
+    statusMessage.value = ''
+    errorMessage.value = ''
+    isDialogOpen.value = true
+  }
+
+  const openCopyDialog = (activity) => {
+    resetForm()
+    formMode.value = ACTIVITY_FORM_MODES.copy
+    copySourceActivityId.value = activity.id
+    copySourceActivity.value = activity
+    Object.assign(form, mapActivityToActivityFormValues(activity, { mode: ACTIVITY_FORM_MODES.copy }))
     statusMessage.value = ''
     errorMessage.value = ''
     isDialogOpen.value = true
@@ -203,91 +191,37 @@ export const useActivityForm = ({
   const closeDialog = () => {
     isDialogOpen.value = false
     resetImageUpload()
+    formMode.value = ACTIVITY_FORM_MODES.create
     editingActivityId.value = null
     editingActivity.value = null
+    copySourceActivityId.value = null
+    copySourceActivity.value = null
     openSelectKey.value = ''
     openRangeKey.value = ''
   }
 
   const validateActivityForm = () => {
-    const missingFields = []
+    const validation = validateActivityFormValues({
+      form: normalizeActivityFormValuesForMode(form, formMode.value),
+      hasSelectedImageFile: Boolean(selectedImageFile.value),
+    })
 
-    if (isBlankValue(form.activityStartDate) || isBlankValue(form.activityEndDate)) {
-      missingFields.push('活動時間')
-    }
-
-    if (!form.isPreOrder && (isBlankValue(form.prepStartDate) || isBlankValue(form.prepEndDate))) {
-      missingFields.push('準備時間')
-    }
-
-    if (isBlankValue(form.name)) missingFields.push('活動名稱')
-    if (!selectedImageFile.value && isBlankValue(form.imageUrl)) missingFields.push('活動圖片')
-    if (isBlankValue(form.address)) missingFields.push('活動地址')
-    if (isBlankValue(form.activityTypeId)) missingFields.push('活動類型')
-    if (isBlankValue(form.animateTypeId)) missingFields.push('動漫')
-
-    if (form.shippingMode === ShippingMode.PerItemPrepaid && form.isPreOrder && !(Number(form.groupBuyThreshold) > 0)) {
-      missingFields.push('成團數量')
-    }
-    if (form.shippingMode === ShippingMode.NoShipping && form.isPreOrder && !(Number(form.groupBuyThreshold) > 0)) {
-      missingFields.push('開團數量')
-    }
-    if (form.shippingMode === ShippingMode.FreeOverAmount && !(Number(form.freeShippingThreshold) > 0)) {
-      missingFields.push('免運門檻')
-    }
-    if (form.shippingMode === ShippingMode.FreeOverAmount && !(Number(form.shippingCost) > 0)) {
-      missingFields.push('運費成本')
-    }
-
-    const hasValidStatus = activityStatusOptions.some(
-      (statusOption) => Number(statusOption.value) === Number(form.status),
-    )
-    if (!hasValidStatus) missingFields.push('活動狀態')
-
-    if (missingFields.length) {
-      errorMessage.value = formatRequiredFieldsMessage(missingFields)
+    if (!validation.isValid) {
+      errorMessage.value = formatActivityFormValidationMessage(validation)
       return false
     }
 
     return true
   }
 
-  const buildActivityFormData = (activityId = null) => {
-    const formData = new FormData()
-
-    appendIfValue(formData, 'id', activityId)
-    appendIfValue(formData, 'name', form.name.trim())
-    appendIfValue(formData, 'activeStartTime', dateTimeToIso(form.activityStartDate))
-    appendIfValue(formData, 'activeEndTime', dateTimeToIso(form.activityEndDate))
-    if (!form.isPreOrder) {
-      appendIfValue(formData, 'prepareStartTime', dateTimeToIso(form.prepStartDate))
-      appendIfValue(formData, 'prepareEndTime', dateTimeToIso(form.prepEndDate))
-    }
-    appendIfValue(formData, 'address', form.address.trim())
-    appendIfValue(formData, 'activityTypeId', form.activityTypeId)
-    appendIfValue(formData, 'animateTypeId', form.animateTypeId)
-    appendIfValue(formData, 'info', sanitizeHtml(form.info).trim())
-    appendIfValue(formData, 'status', form.status)
-    formData.append('isPreOrder', form.isPreOrder ? 'true' : 'false')
-    if (selectedImageFile.value) {
-      formData.append('imageFile', selectedImageFile.value)
-    } else {
-      appendIfValue(formData, 'imageUrl', form.imageUrl)
-    }
-
-    appendIfValue(formData, 'shippingMode', form.shippingMode)
-    appendIfValue(formData, 'groupBuyThreshold', form.groupBuyThreshold)
-    appendIfValue(formData, 'perItemShipping', form.perItemShipping)
-    appendIfValue(formData, 'shippingCost', form.shippingCost)
-    appendIfValue(formData, 'freeShippingThreshold', form.freeShippingThreshold)
-    formData.append('allowCustomerShippingTopUp', form.allowCustomerShippingTopUp ? 'true' : 'false')
-    appendIfValue(formData, 'shippingShareRule', form.shippingShareRule)
-    if (activityId && form.isPreOrder) {
-      appendIfValue(formData, 'groupBuyStatus', form.groupBuyStatus)
-    }
-
-    return formData
-  }
+  const buildActivityFormData = () =>
+    buildActivityFormDataFromEntries(
+      buildActivityFormPayloadEntries(form, {
+        mode: formMode.value,
+        activityId: editingActivityId.value,
+        selectedImageFile: selectedImageFile.value,
+      }),
+    )
 
   const saveActivity = async () => {
     if (!validateActivityForm()) {
@@ -299,22 +233,33 @@ export const useActivityForm = ({
       return
     }
 
+    if (isCopyMode() && !copySourceActivityId.value) {
+      errorMessage.value = '找不到來源活動，無法複製活動。'
+      return
+    }
+
     isSaving.value = true
     errorMessage.value = ''
     statusMessage.value = ''
 
     try {
-      const formData = buildActivityFormData(editingActivityId.value)
-      const response = editingActivityId.value
-        ? await updateActivityApi(formData)
-        : await createActivityApi(formData)
+      const formData = buildActivityFormData()
+      const response =
+        formMode.value === ACTIVITY_FORM_MODES.copy
+          ? await copyActivityApi(copySourceActivityId.value, formData)
+          : editingActivityId.value
+            ? await updateActivityApi(formData)
+            : await createActivityApi(formData)
       const savedActivity = mapActivityFromApi(response?.data)
 
-      if (editingActivityId.value) {
+      if (formMode.value === ACTIVITY_FORM_MODES.edit) {
         activities.value = activities.value.map((activity) =>
           activity.id === editingActivityId.value ? savedActivity : activity,
         )
         statusMessage.value = '編輯活動成功。'
+      } else if (formMode.value === ACTIVITY_FORM_MODES.copy) {
+        activities.value.unshift(savedActivity)
+        statusMessage.value = '複製活動成功。'
       } else {
         activities.value.unshift(savedActivity)
         statusMessage.value = '新增活動成功。'
@@ -334,9 +279,12 @@ export const useActivityForm = ({
 
   return {
     form,
+    formMode,
     isDialogOpen,
     editingActivityId,
     editingActivity,
+    copySourceActivityId,
+    copySourceActivity,
     isSaving,
     selectedImageFile,
     activityImagePreview,
@@ -356,7 +304,7 @@ export const useActivityForm = ({
     getRangeStartLabel,
     getRangeEndLabel,
     getActivityRangeLabel,
-    getPrepRangeLabel,
+    getOfficialShippingRangeLabel,
     handleFormRangeSelect,
     isSelectOpen,
     toggleCustomSelect,
@@ -366,6 +314,7 @@ export const useActivityForm = ({
     getStatusSelectLabel,
     openCreateDialog,
     openEditDialog,
+    openCopyDialog,
     closeDialog,
     saveActivity,
   }

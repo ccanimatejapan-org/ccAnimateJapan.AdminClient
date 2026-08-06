@@ -12,9 +12,9 @@ defineProps({
     type: Boolean,
     default: false,
   },
-  copyingActivityId: {
-    type: [Number, String],
-    default: null,
+  emptyText: {
+    type: String,
+    default: '目前尚無活動資料。',
   },
   editIconPaths: {
     type: Array,
@@ -116,7 +116,7 @@ const getGroupBuyBadgeClass = (status) => {
       </thead>
       <tbody>
         <tr v-if="!activities.length">
-          <td :colspan="columns.length">{{ isLoading ? '正在讀取活動資料...' : '目前尚無活動資料。' }}</td>
+          <td :colspan="columns.length">{{ isLoading ? '正在讀取活動資料...' : emptyText }}</td>
         </tr>
         <template v-else>
           <tr v-for="activity in activities" :key="activity.id">
@@ -157,11 +157,12 @@ const getGroupBuyBadgeClass = (status) => {
               <span class="type-badge">{{ getAnimateTypeName(activity.animateTypeId) }}</span>
             </td>
             <td>
-              <div class="date-stack">
-                <span>{{ activity.prepStartDate || '-' }}</span>
+              <div v-if="activity.isPreOrder" class="date-stack">
+                <span>{{ activity.officialShippingStartDate || '-' }}</span>
                 <span>~</span>
-                <span>{{ activity.prepEndDate || '-' }}</span>
+                <span>{{ activity.officialShippingEndDate || '-' }}</span>
               </div>
+              <span v-else>-</span>
             </td>
             <td class="activity-note-cell">
               <div
@@ -203,7 +204,6 @@ const getGroupBuyBadgeClass = (status) => {
                   class="table-action-button icon-action-button table-action-button--copy"
                   type="button"
                   :aria-label="`複製${activity.name || '活動'}`"
-                  :disabled="copyingActivityId !== null"
                   title="複製活動"
                   @click="$emit('copy', activity)"
                 >

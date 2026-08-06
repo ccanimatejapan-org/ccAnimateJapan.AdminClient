@@ -4,7 +4,7 @@ import apexchart from 'vue3-apexcharts'
 import PanelCard from '@/shared/components/PanelCard.vue'
 import MessageBlock from '@/shared/components/MessageBlock.vue'
 import { formatCurrency, formatNumber } from '@/shared/utils/format'
-import { activityStatusOptions } from '@/modules/activity/utils/activityMapper'
+import { activityStatusDisplayOptions } from '@/modules/activity/utils/activityMapper'
 
 const props = defineProps({
   items: {
@@ -14,7 +14,7 @@ const props = defineProps({
 })
 
 const statusLabel = (status) =>
-  activityStatusOptions.find((option) => option.value === Number(status))?.label || '—'
+  activityStatusDisplayOptions.find((option) => option.value === Number(status))?.label || '—'
 
 const topItems = computed(() => props.items.slice(0, 8))
 

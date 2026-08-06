@@ -37,17 +37,17 @@ export const useActivityFilters = ({
   isLoadingAnimateTypes,
 }) => {
   const searchFilters = reactive(createEmptyActivityFilters())
-  const openFilterSelectKey = ref('')
   const filterRangeFieldKeys = {
     activity: {
       start: 'activityDateStart',
       end: 'activityDateEnd',
     },
-    prep: {
-      start: 'prepDateStart',
-      end: 'prepDateEnd',
+    officialShipping: {
+      start: 'officialShippingStartDate',
+      end: 'officialShippingEndDate',
     },
   }
+  const openFilterSelectKey = ref('')
 
   const {
     calendarWeekdays,
@@ -150,14 +150,18 @@ export const useActivityFilters = ({
     getFilterRangeLabel(searchFilters.activityDateStart, searchFilters.activityDateEnd),
   )
 
-  const filterPrepRangeLabel = computed(() =>
-    getFilterRangeLabel(searchFilters.prepDateStart, searchFilters.prepDateEnd),
+  const filterOfficialShippingRangeLabel = computed(() =>
+    getFilterRangeLabel(searchFilters.officialShippingStartDate, searchFilters.officialShippingEndDate),
   )
 
   const filterActivityStartLabel = computed(() => toFilterDisplayDate(searchFilters.activityDateStart) || '未選擇')
   const filterActivityEndLabel = computed(() => toFilterDisplayDate(searchFilters.activityDateEnd) || '未選擇')
-  const filterPrepStartLabel = computed(() => toFilterDisplayDate(searchFilters.prepDateStart) || '未選擇')
-  const filterPrepEndLabel = computed(() => toFilterDisplayDate(searchFilters.prepDateEnd) || '未選擇')
+  const filterOfficialShippingStartLabel = computed(() =>
+    toFilterDisplayDate(searchFilters.officialShippingStartDate) || '未選擇',
+  )
+  const filterOfficialShippingEndLabel = computed(() =>
+    toFilterDisplayDate(searchFilters.officialShippingEndDate) || '未選擇',
+  )
 
   return {
     searchFilters,
@@ -187,10 +191,10 @@ export const useActivityFilters = ({
     isFilterRangeDaySelected,
     handleFilterRangeSelect,
     filterActivityRangeLabel,
-    filterPrepRangeLabel,
+    filterOfficialShippingRangeLabel,
     filterActivityStartLabel,
     filterActivityEndLabel,
-    filterPrepStartLabel,
-    filterPrepEndLabel,
+    filterOfficialShippingStartLabel,
+    filterOfficialShippingEndLabel,
   }
 }

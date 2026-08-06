@@ -28,7 +28,7 @@ export const createActivity = (formData) => httpClient.post('/api/activities', f
 
 export const updateActivity = (formData) => httpClient.post('/api/activities/update', formData)
 
-export const copyActivity = (activityId) => httpClient.post(`/api/activities/${activityId}/copy`)
+export const copyActivity = (activityId, formData) => httpClient.post(`/api/activities/${activityId}/copy`, formData)
 
 export const deleteActivity = (activityId) => httpClient.post(`/api/activities/${activityId}/delete`)
 

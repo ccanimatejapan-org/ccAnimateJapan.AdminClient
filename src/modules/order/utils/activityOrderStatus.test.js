@@ -9,24 +9,24 @@ import {
   isActivityReadOnly,
 } from './activityOrderStatus.js'
 
-test('ORDERABLE_ACTIVITY_STATUSES only covers preparing and started', () => {
-  assert.deepEqual(ORDERABLE_ACTIVITY_STATUSES, [ActivityEnum.Preparing, ActivityEnum.Started])
+test('ORDERABLE_ACTIVITY_STATUSES only covers started', () => {
+  assert.deepEqual(ORDERABLE_ACTIVITY_STATUSES, [ActivityEnum.Started])
 })
 
-test('isActivityReadOnly is false only for orderable statuses', () => {
-  assert.equal(isActivityReadOnly({ status: ActivityEnum.Preparing }), false)
+test('isActivityReadOnly is false only for started status', () => {
   assert.equal(isActivityReadOnly({ status: ActivityEnum.Started }), false)
+  assert.equal(isActivityReadOnly({ status: ActivityEnum.Preparing }), true)
   assert.equal(isActivityReadOnly({ status: ActivityEnum.NotStarted }), true)
   assert.equal(isActivityReadOnly({ status: ActivityEnum.PreparationEnded }), true)
   assert.equal(isActivityReadOnly({ status: ActivityEnum.Ended }), true)
   assert.equal(isActivityReadOnly(null), false)
 })
 
-test('getActivityStatusBadge labels only the read-only statuses', () => {
+test('getActivityStatusBadge labels only the read-only statuses including legacy values', () => {
   assert.equal(getActivityStatusBadge({ status: ActivityEnum.NotStarted }), '尚未開始')
+  assert.equal(getActivityStatusBadge({ status: ActivityEnum.Preparing }), '準備中')
   assert.equal(getActivityStatusBadge({ status: ActivityEnum.PreparationEnded }), '準備結束')
   assert.equal(getActivityStatusBadge({ status: ActivityEnum.Ended }), '已結束')
-  assert.equal(getActivityStatusBadge({ status: ActivityEnum.Preparing }), '')
   assert.equal(getActivityStatusBadge({ status: ActivityEnum.Started }), '')
 })
 

@@ -37,7 +37,7 @@ export const ActivityEnum = Object.freeze({
   Ended: 4,
 })
 
-export const activityStatusOptions = Object.freeze([
+export const activityStatusDisplayOptions = Object.freeze([
   { value: ActivityEnum.NotStarted, label: '活動尚未開始' },
   { value: ActivityEnum.Preparing, label: '活動準備中' },
   { value: ActivityEnum.PreparationEnded, label: '活動準備結束' },
@@ -45,16 +45,34 @@ export const activityStatusOptions = Object.freeze([
   { value: ActivityEnum.Ended, label: '活動結束' },
 ])
 
-export const normalizeActivityStatus = (value) => {
+// 可寫入選項刻意排除 legacy Preparing (1)／PreparationEnded (2)。
+export const activityStatusOptions = Object.freeze([
+  { value: ActivityEnum.NotStarted, label: '活動尚未開始' },
+  { value: ActivityEnum.Started, label: '活動開始' },
+  { value: ActivityEnum.Ended, label: '活動結束' },
+])
+
+const activityStatusDisplayValues = new Set(activityStatusDisplayOptions.map((option) => option.value))
+const writableActivityStatusValues = new Set(activityStatusOptions.map((option) => option.value))
+
+export const normalizeActivityStatusForDisplay = (value) => {
   const status = Number(value)
-  return activityStatusOptions.some((option) => option.value === status)
-    ? status
-    : ActivityEnum.NotStarted
+  return activityStatusDisplayValues.has(status) ? status : ActivityEnum.NotStarted
 }
 
+export const normalizeWritableActivityStatus = (value) => {
+  const status = Number(value)
+  return writableActivityStatusValues.has(status) ? status : null
+}
+
+export const isWritableActivityStatus = (value) => writableActivityStatusValues.has(Number(value))
+
+// 保留向後相容的顯示正規化；不可用於表單可寫入狀態驗證。
+export const normalizeActivityStatus = normalizeActivityStatusForDisplay
+
 export const toActivityStatusText = (value) => {
-  const status = normalizeActivityStatus(value)
-  return activityStatusOptions.find((option) => option.value === status)?.label || ''
+  const status = normalizeActivityStatusForDisplay(value)
+  return activityStatusDisplayOptions.find((option) => option.value === status)?.label || ''
 }
 
 export const toActivityPreOrderText = (isPreOrder) => (isPreOrder ? '預購' : '現貨')
@@ -116,11 +134,17 @@ export const mapActivityFromApi = (
   activity,
   { fallbackActivityImage = defaultFallbackActivityImage } = {},
 ) => {
-  const status = normalizeActivityStatus(activity.status)
+  const status = normalizeActivityStatusForDisplay(activity.status)
   const isPreOrder = activity.isPreOrder === true
 
   const shippingMode = activity.shippingMode || ShippingMode.NoShipping
   const groupBuyStatus = activity.groupBuyStatus || GroupBuyStatus.NotRequired
+  const officialShippingStartDate = isPreOrder
+    ? toDisplayDateTime(activity.officialShippingStartTime)
+    : ''
+  const officialShippingEndDate = isPreOrder
+    ? toDisplayDateTime(activity.officialShippingEndTime)
+    : ''
 
   return {
     id: activity.id,
@@ -149,8 +173,8 @@ export const mapActivityFromApi = (
     activityType: activity.activityTypeId ? `#${activity.activityTypeId}` : '-',
     animateTypeId: activity.animateTypeId || '',
     animateType: activity.animateTypeId ? `#${activity.animateTypeId}` : '-',
-    prepStartDate: toDisplayDateTime(activity.prepareStartTime),
-    prepEndDate: toDisplayDateTime(activity.prepareEndTime),
+    officialShippingStartDate,
+    officialShippingEndDate,
     raw: activity,
   }
 }

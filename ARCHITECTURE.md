@@ -11,9 +11,9 @@
 - 權威登記表：[`../ccAnimateJapan.AdminAPI/docs/STATUS_CODES.md`](../ccAnimateJapan.AdminAPI/docs/STATUS_CODES.md)
 - 開團 / 運費 / 補運費怎麼運作：[`../ccAnimateJapan.AdminAPI/docs/GROUP_BUY.md`](../ccAnimateJapan.AdminAPI/docs/GROUP_BUY.md)
 - 本 repo 的狀態鏡像檔：
-  - `src/modules/activity/utils/activityMapper.js`（活動狀態 `ActivityEnum`、運費模式 `ShippingMode`、分攤規則 `ShippingShareRule`、開團狀態 `GroupBuyStatus` + 中文標籤）
+  - `src/modules/activity/utils/activityMapper.js`（活動狀態 `ActivityEnum`、可讀狀態 `activityStatusDisplayOptions`、可寫狀態 `activityStatusOptions`、運費模式 `ShippingMode`、分攤規則 `ShippingShareRule`、開團狀態 `GroupBuyStatus` + 中文標籤）
   - `src/modules/order/utils/orderStatuses.js`（訂單 / 付款 / 物流 / 訂單商品 / 補運費付款 各狀態）
-  - `src/modules/order/utils/activityOrderStatus.js`（可下單 / 唯讀活動狀態）
+  - `src/modules/order/utils/activityOrderStatus.js`（可下單 / 唯讀活動狀態；目前只有 `Started (3)` 可新建訂單，legacy `Preparing (1)` / `PreparationEnded (2)` 僅可讀）
 
 ## 目錄總覽
 
@@ -108,7 +108,10 @@ XxxPage.vue (orchestration)
 
 **活動表單（`activity` 模組 `ActivityFormDialog.vue` + `useActivityForm.js`）**
 
-- **現貨活動不顯示運費模式與開團設定**：整段運費/開團 UI 以 `v-if="form.isPreOrder"` 包住；切到現貨時 watch 會把運費模式強制回 `NoShipping`、分攤規則回 `ByQuantity`、關閉「允許顧客補運費」，避免殘留團購設定被存入或卡驗證。
+- **現貨活動不顯示運費模式與開團設定**：整段運費/開團 UI 以 `v-if="form.isPreOrder"` 包住；切到現貨時 watch 會把官方出貨期間清空、運費模式強制回 `NoShipping`、分攤規則回 `ByQuantity`、關閉「允許顧客補運費」，避免殘留預購設定被存入或卡驗證。
+- **預購**才顯示且必填「官方出貨期間」：表單欄位與 API payload 使用 `officialShippingStartTime` / `officialShippingEndTime`；現貨 payload 不送官方出貨欄位，列表與表格以 `-` 顯示。
+- **複製活動**共用活動表單的 `copy` mode：點擊複製先預填來源活動（名稱加「（複製）」），狀態強制 `NotStarted (0)`，預購開團狀態強制 `Recruiting`、現貨為 `NotRequired`；儲存時才以 multipart `POST /api/activities/{sourceId}/copy` 建立副本，不把來源 id 塞進 payload `id`。
+- **表單純規則集中在 `src/modules/activity/utils/activityFormRules.js`**：create/edit/copy mode mapping、validation、multipart entries 組裝都在純函式，供 composable 與 colocated `node:test` 共用，避免引入 Vue runtime。
 - **預購**才顯示運費模式：`PerItemPrepaid`（境內固定運費：每件預收＋運費成本＋成團數量）、`FreeOverAmount`（滿額免運：免運門檻＋**運費成本**，未達門檻時由顧客分攤該整筆運費）、`NoShipping`（買了就免運：開團數量）。
 - **分攤規則唯讀、由運費模式決定**：不給管理員選（`deriveShareRule(mode)`：`FreeOverAmount→ByAmount`、其餘 `→ByQuantity`），前端僅唯讀顯示、後端強制決定。
 

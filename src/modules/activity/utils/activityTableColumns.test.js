@@ -26,7 +26,7 @@ test('createActivityTableColumns returns the expected keys, labels and sortable 
       ['groupBuyStatus', '開團狀態', true],
       ['activityType', '活動類型', true],
       ['animateType', '動漫', true],
-      ['prepPeriod', '準備期間', true],
+      ['officialShippingPeriod', '官方出貨期間', true],
       ['info', '備註', true],
       ['actions', '操作', false],
     ],
@@ -53,8 +53,20 @@ test('createActivityTableColumns getValue functions read activity fields and inj
   assert.equal(getValue('activityType')({ activityTypeId: 7 }), 'activity:7')
   assert.equal(getValue('animateType')({ animateTypeId: 9 }), 'animate:9')
   assert.equal(
-    getValue('prepPeriod')({ prepStartDate: '2024-01-01 00:00', prepEndDate: '2024-01-02 00:00' }),
-    '2024-01-01 00:00 2024-01-02 00:00',
+    getValue('officialShippingPeriod')({
+      isPreOrder: true,
+      officialShippingStartDate: '2024-08-01 00:00',
+      officialShippingEndDate: '2024-08-15 00:00',
+    }),
+    '2024-08-01 00:00 2024-08-15 00:00',
+  )
+  assert.equal(
+    getValue('officialShippingPeriod')({
+      isPreOrder: false,
+      officialShippingStartDate: '2024-08-01 00:00',
+      officialShippingEndDate: '2024-08-15 00:00',
+    }),
+    '-',
   )
   assert.equal(getValue('info')({ info: '<p>hi</p>' }), 'stripped:<p>hi</p>')
 })

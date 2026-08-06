@@ -258,6 +258,63 @@
   stroke-width: 1.9;
 }
 
+.activity-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 16px;
+  border-bottom: 1px solid #f0e5dc;
+  padding-bottom: 10px;
+}
+
+.activity-tab {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #f1c7b0;
+  border-radius: 999px;
+  background: #fff2ea;
+  color: #8f3f47;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 900;
+  padding: 0 16px;
+}
+
+.activity-tab:hover {
+  border-color: #b84d55;
+  background: #ffe4d8;
+}
+
+.activity-tab.is-active {
+  border-color: #b84d55;
+  background: #b84d55;
+  color: #ffffff;
+}
+
+.activity-tab:focus-visible {
+  outline: 3px solid rgb(184 77 85 / 22%);
+  outline-offset: 2px;
+}
+
+.activity-tab__count {
+  display: inline-flex;
+  min-height: 22px;
+  align-items: center;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 72%);
+  color: inherit;
+  font-size: 0.8rem;
+  padding: 2px 8px;
+}
+
+.activity-tab-panel {
+  display: grid;
+  gap: 14px;
+}
+
 @media (max-width: 560px) {
   .activity-page-title h1 {
     font-size: 1.45rem;

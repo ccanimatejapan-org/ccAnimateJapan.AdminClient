@@ -7,9 +7,9 @@ const defaultRangeFieldKeys = {
     start: 'activityStartDate',
     end: 'activityEndDate',
   },
-  prep: {
-    start: 'prepStartDate',
-    end: 'prepEndDate',
+  officialShipping: {
+    start: 'officialShippingStartDate',
+    end: 'officialShippingEndDate',
   },
 }
 
@@ -63,7 +63,7 @@ export const useActivityRangePicker = (
   const openRangeKey = ref('')
   const rangeCalendarMonth = reactive({
     activity: '',
-    prep: '',
+    officialShipping: '',
   })
 
   const getRangeFields = (key) => rangeFieldKeys[key] || null
@@ -97,7 +97,7 @@ export const useActivityRangePicker = (
   }
 
   const getActivityRangeLabel = () => formatRangeLabel('activity')
-  const getPrepRangeLabel = () => formatRangeLabel('prep')
+  const getOfficialShippingRangeLabel = () => formatRangeLabel('officialShipping')
 
   const isRangeOpen = (key) => openRangeKey.value === key
 
@@ -216,7 +216,7 @@ export const useActivityRangePicker = (
     getRangeStartLabel,
     getRangeEndLabel,
     getActivityRangeLabel,
-    getPrepRangeLabel,
+    getOfficialShippingRangeLabel,
     selectRangeDate,
   }
 }

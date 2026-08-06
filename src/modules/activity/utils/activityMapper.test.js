@@ -3,12 +3,16 @@ import assert from 'node:assert/strict'
 
 import {
   ActivityEnum,
+  activityStatusDisplayOptions,
   activityStatusOptions,
   dateTimeToIso,
   deriveShareRule,
   GroupBuyStatus,
+  isWritableActivityStatus,
   mapActivityFromApi,
   normalizeActivityStatus,
+  normalizeActivityStatusForDisplay,
+  normalizeWritableActivityStatus,
   ShippingMode,
   ShippingShareRule,
   toActivityPreOrderText,
@@ -20,7 +24,7 @@ import {
   toShippingShareRuleText,
 } from './activityMapper.js'
 
-test('ActivityEnum and activityStatusOptions expose the five activity states', () => {
+test('ActivityEnum keeps legacy statuses readable while writable options only expose 0/3/4', () => {
   assert.deepEqual(ActivityEnum, {
     NotStarted: 0,
     Preparing: 1,
@@ -29,19 +33,29 @@ test('ActivityEnum and activityStatusOptions expose the five activity states', (
     Ended: 4,
   })
   assert.deepEqual(
-    activityStatusOptions.map((option) => option.value),
+    activityStatusDisplayOptions.map((option) => option.value),
     [0, 1, 2, 3, 4],
+  )
+  assert.deepEqual(
+    activityStatusOptions.map((option) => option.value),
+    [0, 3, 4],
   )
 })
 
-test('normalizeActivityStatus keeps valid statuses and falls back to NotStarted', () => {
-  assert.equal(normalizeActivityStatus(3), 3)
-  assert.equal(normalizeActivityStatus('4'), 4)
-  assert.equal(normalizeActivityStatus(99), ActivityEnum.NotStarted)
-  assert.equal(normalizeActivityStatus(undefined), ActivityEnum.NotStarted)
+test('display normalization keeps legacy statuses; writable normalization rejects them', () => {
+  assert.equal(normalizeActivityStatusForDisplay(1), ActivityEnum.Preparing)
+  assert.equal(normalizeActivityStatusForDisplay('2'), ActivityEnum.PreparationEnded)
+  assert.equal(normalizeActivityStatus(1), ActivityEnum.Preparing)
+  assert.equal(normalizeActivityStatusForDisplay(99), ActivityEnum.NotStarted)
+  assert.equal(normalizeWritableActivityStatus(3), ActivityEnum.Started)
+  assert.equal(normalizeWritableActivityStatus(1), null)
+  assert.equal(isWritableActivityStatus(1), false)
+  assert.equal(isWritableActivityStatus(3), true)
 })
 
 test('toActivityStatusText and toActivityPreOrderText return the expected labels', () => {
+  assert.equal(toActivityStatusText(1), '活動準備中')
+  assert.equal(toActivityStatusText(2), '活動準備結束')
   assert.equal(toActivityStatusText(3), '活動開始')
   assert.equal(toActivityStatusText(99), '活動尚未開始')
   assert.equal(toActivityPreOrderText(true), '預購')
@@ -75,6 +89,8 @@ test('mapActivityFromApi maps raw API fields into the view model', () => {
     imageUrl: '',
     activeStartTime: '2024-05-06T07:08',
     activeEndTime: '2024-05-07T07:08',
+    officialShippingStartTime: '2024-08-01T09:00',
+    officialShippingEndTime: '2024-08-15T18:00',
   })
 
   assert.equal(mapped.id, 12)
@@ -92,7 +108,21 @@ test('mapActivityFromApi maps raw API fields into the view model', () => {
   assert.equal(mapped.animateType, '#8')
   assert.equal(mapped.image, '/cc-admin-mark.svg')
   assert.equal(mapped.activityStartDate, '2024-05-06 07:08')
+  assert.equal(mapped.officialShippingStartDate, '2024-08-01 09:00')
+  assert.equal(mapped.officialShippingEndDate, '2024-08-15 18:00')
   assert.equal(mapped.raw.id, 12)
+})
+
+test('mapActivityFromApi hides official shipping dates for in-stock activities', () => {
+  const mapped = mapActivityFromApi({
+    id: 1,
+    isPreOrder: false,
+    officialShippingStartTime: '2024-08-01T09:00',
+    officialShippingEndTime: '2024-08-15T18:00',
+  })
+
+  assert.equal(mapped.officialShippingStartDate, '')
+  assert.equal(mapped.officialShippingEndDate, '')
 })
 
 test('mapActivityFromApi falls back for missing optional fields', () => {
