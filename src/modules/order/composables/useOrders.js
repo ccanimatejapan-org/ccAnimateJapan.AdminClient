@@ -9,6 +9,16 @@ import { isActivityReadOnly } from '@/modules/order/utils/activityOrderStatus'
 
 const normalizeText = (value) => String(value || '').trim().toLowerCase()
 
+export const ORDER_ACTIVITY_TABS = {
+  INCOMPLETE: 'incomplete',
+  CLOSED: 'closed',
+  PREORDER_COMPLETED: 'preorderCompleted',
+  STOCKED: 'stocked',
+  COMPLETED: 'completed',
+}
+
+const VALID_TABS = new Set(Object.values(ORDER_ACTIVITY_TABS))
+
 export const useOrders = ({ errorMessage, selectedOrder }) => {
   const activities = ref([])
   const selectedActivityId = ref('')
@@ -20,6 +30,7 @@ export const useOrders = ({ errorMessage, selectedOrder }) => {
   const statusFilter = ref('')
   const isLoadingActivities = ref(false)
   const isLoadingOrders = ref(false)
+  const activityTab = ref(ORDER_ACTIVITY_TABS.INCOMPLETE)
 
   const selectedActivity = computed(() =>
     activities.value.find((activity) => Number(activity.activityId) === Number(selectedActivityId.value)) || null,
@@ -55,7 +66,7 @@ export const useOrders = ({ errorMessage, selectedOrder }) => {
     errorMessage.value = ''
 
     try {
-      activities.value = await listOrderActivities()
+      activities.value = await listOrderActivities({ tab: activityTab.value })
       selectedActivityId.value = activities.value[0]?.activityId || ''
       expandedActivityId.value = selectedActivityId.value
     } catch (err) {
@@ -121,6 +132,23 @@ export const useOrders = ({ errorMessage, selectedOrder }) => {
     expandedActivityId.value = activityId
   }
 
+  // 切換 tab：清空目前活動選取與明細，依新 tab 呼叫活動列表 API。
+  const switchActivityTab = async (nextTab) => {
+    if (!VALID_TABS.has(nextTab)) return
+    if (activityTab.value === nextTab) return
+
+    activityTab.value = nextTab
+    selectedActivityId.value = ''
+    expandedActivityId.value = ''
+    products.value = []
+    orders.value = []
+    selectedOrder.value = null
+    searchKeyword.value = ''
+    statusFilter.value = ''
+
+    await loadActivities()
+  }
+
   return {
     activities,
     selectedActivityId,
@@ -137,10 +165,12 @@ export const useOrders = ({ errorMessage, selectedOrder }) => {
     filteredOrders,
     totalCount,
     hasFiltersApplied,
+    activityTab,
     loadActivities,
     loadDeliveryTypes,
     loadProducts,
     loadOrders,
     selectActivity,
+    switchActivityTab,
   }
 }

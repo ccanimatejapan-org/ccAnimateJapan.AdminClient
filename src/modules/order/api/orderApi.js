@@ -1,8 +1,9 @@
 import { apiBlob, httpClient } from '@/shared/api/httpClient'
 import { toQueryString } from '@/shared/utils/queryString'
 
-export const listOrderActivities = async () => {
-  const response = await httpClient.get('/api/orders/activities')
+export const listOrderActivities = async ({ tab = 'incomplete' } = {}) => {
+  const query = toQueryString({ tab })
+  const response = await httpClient.get(`/api/orders/activities${query}`)
   return response?.data || []
 }
 

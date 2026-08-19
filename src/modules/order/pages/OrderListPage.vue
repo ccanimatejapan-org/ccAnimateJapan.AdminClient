@@ -1,10 +1,10 @@
 <script setup>
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import OrderDeleteConfirmDialog from '@/modules/order/components/OrderDeleteConfirmDialog.vue'
 import OrderFormDialog from '@/modules/order/components/OrderFormDialog.vue'
-import { useOrders } from '@/modules/order/composables/useOrders'
+import { useOrders, ORDER_ACTIVITY_TABS } from '@/modules/order/composables/useOrders'
 import { useOrderForm } from '@/modules/order/composables/useOrderForm'
 import { useOrderRowActions } from '@/modules/order/composables/useOrderRowActions'
 import { useNewOrdersStore } from '@/modules/order/stores/newOrdersStore'
@@ -85,12 +85,26 @@ const {
   filteredOrders,
   totalCount,
   hasFiltersApplied,
+  activityTab,
   loadActivities,
   loadDeliveryTypes,
   loadProducts,
   loadOrders,
   selectActivity,
+  switchActivityTab,
 } = useOrders({ errorMessage, selectedOrder })
+
+const activityTabs = [
+  { value: ORDER_ACTIVITY_TABS.INCOMPLETE, label: '尚未結單' },
+  { value: ORDER_ACTIVITY_TABS.CLOSED, label: '已結單' },
+  { value: ORDER_ACTIVITY_TABS.PREORDER_COMPLETED, label: '預購已完成' },
+  { value: ORDER_ACTIVITY_TABS.STOCKED, label: '商品已入庫' },
+  { value: ORDER_ACTIVITY_TABS.COMPLETED, label: '已完成' },
+]
+
+const currentTabConfig = computed(() =>
+  activityTabs.find((tab) => tab.value === activityTab.value) || activityTabs[0],
+)
 
 const {
   sortedItems: sortedOrders,
@@ -278,6 +292,22 @@ onUnmounted(() => {
       </div>
     </section>
 
+    <nav class="order-tabs" role="tablist" aria-label="訂單分頁">
+      <button
+        v-for="tab in activityTabs"
+        :key="tab.value"
+        type="button"
+        role="tab"
+        class="order-tab"
+        :class="{ 'order-tab--active': activityTab === tab.value }"
+        :aria-selected="activityTab === tab.value"
+        :disabled="isLoadingActivities || activityTab === tab.value"
+        @click="switchActivityTab(tab.value)"
+      >
+        {{ tab.label }}
+      </button>
+    </nav>
+
     <MessageBlock v-if="errorMessage" tone="error">
       {{ errorMessage }}
     </MessageBlock>
@@ -294,7 +324,7 @@ onUnmounted(() => {
         </div>
 
         <MessageBlock v-if="!isLoadingActivities && activities.length === 0" tone="empty">
-          目前沒有可顯示的活動
+          {{ currentTabConfig.label === '尚未結單' ? '目前沒有可顯示的活動' : `沒有屬於「${currentTabConfig.label}」分頁的活動` }}
         </MessageBlock>
 
         <div class="activity-list">

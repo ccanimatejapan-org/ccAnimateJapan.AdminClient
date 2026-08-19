@@ -150,6 +150,44 @@
   gap: 10px;
 }
 
+.order-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border: 1px solid #eaded2;
+  border-radius: 12px;
+  background: #fffdf9;
+  padding: 6px;
+}
+
+.order-tab {
+  flex: 1 1 0;
+  min-width: 96px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #6b543a;
+  font-size: 0.9rem;
+  font-weight: 800;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.order-tab:hover:not(.order-tab--active):not(:disabled) {
+  color: #8a5b24;
+}
+
+.order-tab--active {
+  background: #c48445;
+  color: #fff8ea;
+}
+
+.order-tab:disabled:not(.order-tab--active) {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 .activity-group {
   display: grid;
   gap: 8px;
@@ -285,9 +323,13 @@
 }
 
 .activity-time {
+  overflow: hidden;
+  min-width: 0;
   color: #59665f;
   font-size: 0.82rem;
   line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .product-summary {
@@ -303,6 +345,7 @@
 
 .product-row {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
   color: #3b4a44;
@@ -310,10 +353,15 @@
 }
 
 .product-row span {
+  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.product-row strong {
+  flex-shrink: 0;
 }
 
 .section-eyebrow {
