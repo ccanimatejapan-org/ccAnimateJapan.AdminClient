@@ -33,3 +33,6 @@ export const updateActivityProduct = (activityId, payload) =>
 
 export const copyActivityProduct = (activityId, productId) =>
   httpClient.post(`/api/activities/${activityId}/products/${productId}/copy`)
+
+export const deleteActivityProduct = (activityId, productId) =>
+  httpClient.post(`/api/activities/${activityId}/products/${productId}/delete`)

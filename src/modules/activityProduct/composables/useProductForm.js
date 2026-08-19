@@ -2,6 +2,7 @@ import { computed, reactive, ref } from 'vue'
 import {
   copyActivityProduct,
   createActivityProduct,
+  deleteActivityProduct,
   updateActivityProduct,
 } from '@/modules/activityProduct/api/activityProductApi'
 import { useMultiImageUpload } from '@/shared/composables/useMultiImageUpload'
@@ -39,6 +40,7 @@ export const useProductForm = ({
   products,
   statusMessage,
   errorMessage,
+  requestConfirm,
 }) => {
   const emptyForm = createEmptyProductForm()
   const form = reactive(createEmptyProductForm())
@@ -46,6 +48,7 @@ export const useProductForm = ({
   const isDialogOpen = ref(false)
   const isSaving = ref(false)
   const copyingProductId = ref(null)
+  const isDeleting = ref(false)
 
   const imageUpload = useMultiImageUpload({
     limit: PRODUCT_IMAGE_LIMIT,
@@ -239,12 +242,57 @@ export const useProductForm = ({
     }
   }
 
+  const deleteEditingProduct = async () => {
+    const productId = editingProductId.value
+    if (!productId || isDeleting.value) return
+
+    if (!activityId.value) {
+      errorMessage.value = '找不到活動 ID，無法刪除商品。'
+      return
+    }
+
+    if (!getAdminToken()) {
+      errorMessage.value = '登入狀態已失效，請重新登入後再刪除商品。'
+      return
+    }
+
+    if (typeof requestConfirm !== 'function') {
+      errorMessage.value = '刪除商品未啟用確認流程。'
+      return
+    }
+
+    const targetProduct = products.value.find((product) => product.id === productId) || {
+      id: productId,
+      name: form.name,
+    }
+    const confirmed = await requestConfirm(targetProduct)
+    if (!confirmed) {
+      return
+    }
+
+    isDeleting.value = true
+    errorMessage.value = ''
+    statusMessage.value = ''
+
+    try {
+      await deleteActivityProduct(activityId.value, productId)
+      products.value = products.value.filter((product) => product.id !== productId)
+      statusMessage.value = '刪除商品成功。'
+      closeDialog()
+    } catch (err) {
+      errorMessage.value = err.message || '刪除商品失敗。'
+    } finally {
+      isDeleting.value = false
+    }
+  }
+
   return {
     form,
     editingProductId,
     isDialogOpen,
     isSaving,
     copyingProductId,
+    isDeleting,
     hasSelectedProductType,
     canSaveProduct,
     imageUpload,
@@ -255,5 +303,6 @@ export const useProductForm = ({
     closeDialog,
     saveProduct,
     copyProduct,
+    deleteEditingProduct,
   }
 }

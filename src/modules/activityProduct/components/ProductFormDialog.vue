@@ -22,6 +22,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  isDeleting: {
+    type: Boolean,
+    default: false,
+  },
   errorMessage: {
     type: String,
     default: '',
@@ -64,7 +68,7 @@ const props = defineProps({
   },
 })
 
-defineEmits(['close', 'submit', 'image-change', 'remove-existing-image', 'remove-new-image'])
+defineEmits(['close', 'submit', 'delete', 'image-change', 'remove-existing-image', 'remove-new-image'])
 
 const isProductTypeSelectOpen = ref(false)
 
@@ -190,11 +194,22 @@ const onPriceInput = (event) => {
       <MessageBlock v-if="productTypeErrorMessage">{{ productTypeErrorMessage }}</MessageBlock>
       <MessageBlock v-if="errorMessage">{{ errorMessage }}</MessageBlock>
 
-      <div class="dialog-actions">
-        <AppButton pill :disabled="isSaving" @click="$emit('close')">取消</AppButton>
-        <AppButton variant="primary" pill elevated type="submit" :disabled="isSaving || !canSubmit">
-          {{ isSaving ? '儲存中...' : '儲存' }}
+      <div class="dialog-actions" :class="{ 'dialog-actions--split': editingProductId }">
+        <AppButton
+          v-if="editingProductId"
+          class="product-dialog-delete-button"
+          pill
+          :disabled="isSaving || isDeleting"
+          @click="$emit('delete')"
+        >
+          {{ isDeleting ? '刪除中...' : '刪除' }}
         </AppButton>
+        <div class="dialog-actions-primary">
+          <AppButton pill :disabled="isSaving || isDeleting" @click="$emit('close')">取消</AppButton>
+          <AppButton variant="primary" pill elevated type="submit" :disabled="isSaving || isDeleting || !canSubmit">
+            {{ isSaving ? '儲存中...' : '儲存' }}
+          </AppButton>
+        </div>
       </div>
     </form>
   </div>
@@ -342,6 +357,28 @@ const onPriceInput = (event) => {
   gap: 12px;
 }
 
+.dialog-actions--split {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dialog-actions-primary {
+  display: flex;
+  gap: 12px;
+}
+
+.product-dialog-delete-button.app-button--pill {
+  border-color: #d6dde3;
+  background: #eef1f3;
+  color: #4b5563;
+}
+
+.product-dialog-delete-button.app-button--pill:hover:not(:disabled) {
+  border-color: #b9c2ca;
+  background: #e2e7ea;
+  color: #374151;
+}
+
 :deep(.form-field--soft input),
 :deep(.form-field--soft select),
 :deep(.form-field--soft textarea) {
@@ -377,6 +414,14 @@ const onPriceInput = (event) => {
 
   .dialog-actions {
     align-items: stretch;
+    flex-direction: column;
+  }
+
+  .dialog-actions--split {
+    align-items: stretch;
+  }
+
+  .dialog-actions-primary {
     flex-direction: column;
   }
 }

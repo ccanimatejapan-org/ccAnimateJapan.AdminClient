@@ -13,6 +13,7 @@ import PanelCard from '@/shared/components/PanelCard.vue'
 import ActivityNoteDialog from '@/shared/components/ActivityNoteDialog.vue'
 import CustomSelect from '@/shared/components/CustomSelect.vue'
 import ProductFormDialog from '@/modules/activityProduct/components/ProductFormDialog.vue'
+import ProductDeleteConfirmDialog from '@/modules/activityProduct/components/ProductDeleteConfirmDialog.vue'
 import ProductTable from '@/shared/components/ProductTable.vue'
 import AppButton from '@/shared/components/AppButton.vue'
 import IconButton from '@/shared/components/IconButton.vue'
@@ -20,6 +21,7 @@ import MessageBlock from '@/shared/components/MessageBlock.vue'
 import { useTableSort } from '@/shared/composables/useTableSort'
 import { useTablePagination } from '@/shared/composables/useTablePagination'
 import { useNoteDialog } from '@/shared/composables/useNoteDialog'
+import { useConfirmDialog } from '@/shared/composables/useConfirmDialog'
 import { useDialogScrollLock } from '@/shared/composables/useDialogScrollLock'
 import { useActivityRateDefaults } from '@/modules/activityProduct/composables/useActivityRateDefaults'
 import { useProductForm } from '@/modules/activityProduct/composables/useProductForm'
@@ -93,10 +95,18 @@ const productStockOptions = [
 const { activityRateDefaults, loadActivityRateDefaults } = useActivityRateDefaults(activityId)
 
 const {
+  isConfirmDialogOpen: isDeleteConfirmDialogOpen,
+  pendingConfirmTarget: pendingDeleteProduct,
+  requestConfirm,
+  resolveConfirm: resolveDeleteConfirm,
+} = useConfirmDialog()
+
+const {
   form,
   editingProductId,
   isDialogOpen,
   isSaving,
+  isDeleting,
   canSaveProduct,
   imageUpload,
   getDefaultProductTypeId,
@@ -105,6 +115,7 @@ const {
   closeDialog,
   saveProduct,
   copyProduct,
+  deleteEditingProduct,
 } = useProductForm({
   activityId,
   activityName,
@@ -117,6 +128,7 @@ const {
   products,
   statusMessage,
   errorMessage,
+  requestConfirm,
 })
 
 const {
@@ -136,7 +148,7 @@ const {
   closeNoteDialog,
 } = useNoteDialog({ getNoteTitle: (item) => item?.name || '商品備註' })
 
-const isAnyDialogOpen = computed(() => isDialogOpen.value || isNoteDialogOpen.value)
+const isAnyDialogOpen = computed(() => isDialogOpen.value || isNoteDialogOpen.value || isDeleteConfirmDialogOpen.value)
 useDialogScrollLock(isAnyDialogOpen)
 
 const formatCurrency = (value, prefix) => `${prefix} ${toNumber(value).toLocaleString()}`
@@ -612,6 +624,7 @@ watch(
       :form="form"
       :editing-product-id="editingProductId"
       :is-saving="isSaving"
+      :is-deleting="isDeleting"
       :error-message="errorMessage"
       :product-type-error-message="productTypeErrorMessage"
       :product-types="productTypes"
@@ -624,9 +637,18 @@ watch(
       :is-pre-order-activity="isPreOrderActivity"
       @close="closeDialog"
       @submit="saveProduct"
+      @delete="deleteEditingProduct"
       @image-change="handleProductImageChange"
       @remove-existing-image="removeExistingProductImage"
       @remove-new-image="removeNewProductImage"
+    />
+
+    <ProductDeleteConfirmDialog
+      v-if="isDeleteConfirmDialogOpen"
+      :product="pendingDeleteProduct"
+      :is-deleting="isDeleting"
+      @close="resolveDeleteConfirm(false)"
+      @confirm="resolveDeleteConfirm(true)"
     />
 
     <ActivityNoteDialog
