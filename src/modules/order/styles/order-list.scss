@@ -441,34 +441,50 @@
   padding: 0 16px;
 }
 
-.add-order-button {
-  display: grid;
-  width: 40px;
+.bulk-status-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   height: 40px;
-  place-items: center;
   border: 0;
   border-radius: 999px;
-  background: #c48445;
   color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 0 14px;
+  white-space: nowrap;
+  cursor: pointer;
 }
 
-.add-order-button:hover:not(:disabled) {
+.bulk-status-button--preorder {
+  background: #c48445;
+}
+
+.bulk-status-button--preorder:hover:not(:disabled) {
   background: #a86b33;
 }
 
-.add-order-button:disabled {
+.bulk-status-button--stocked {
+  background: #277867;
+}
+
+.bulk-status-button--stocked:hover:not(:disabled) {
+  background: #1f6154;
+}
+
+.bulk-status-button:disabled {
   cursor: not-allowed;
   opacity: 0.6;
 }
 
-.add-order-button svg {
+.bulk-status-button svg {
   width: 20px;
   height: 20px;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 2.2;
+  stroke-width: 1.9;
 }
 
 .ghost-button {

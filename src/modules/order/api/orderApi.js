@@ -50,6 +50,18 @@ export const deleteOrder = async (orderId) => {
   return response?.data || null
 }
 
+export const bulkUpdateActivityOrderStatus = async (activityId, orderStatus, sourceOrderStatus = null) => {
+  const payload = { orderStatus }
+  if (sourceOrderStatus !== null && sourceOrderStatus !== undefined) {
+    payload.sourceOrderStatus = sourceOrderStatus
+  }
+  const response = await httpClient.post(
+    `/api/orders/activity/${activityId}/bulk-status`,
+    payload,
+  )
+  return response?.data || null
+}
+
 export const sendOrderConfirmationEmail = async (orderId) => {
   const response = await httpClient.post(`/api/orders/${orderId}/send-confirmation-email`)
   return response?.data || null

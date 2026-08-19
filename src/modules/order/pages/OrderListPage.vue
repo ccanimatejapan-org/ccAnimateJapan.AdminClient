@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import OrderDeleteConfirmDialog from '@/modules/order/components/OrderDeleteConfirmDialog.vue'
+import OrderBulkStatusConfirmDialog from '@/modules/order/components/OrderBulkStatusConfirmDialog.vue'
 import OrderFormDialog from '@/modules/order/components/OrderFormDialog.vue'
 import { useOrders, ORDER_ACTIVITY_TABS } from '@/modules/order/composables/useOrders'
 import { useOrderForm } from '@/modules/order/composables/useOrderForm'
@@ -14,14 +15,14 @@ import {
   getActivityStatusBadge,
   isActivityReadOnly,
 } from '@/modules/order/utils/activityOrderStatus'
-import { deleteOrder, getOrderDetail } from '@/modules/order/api/orderApi'
+import { deleteOrder, getOrderDetail, bulkUpdateActivityOrderStatus } from '@/modules/order/api/orderApi'
 import PageHeading from '@/shared/components/PageHeading.vue'
 import PageShell from '@/shared/components/PageShell.vue'
 import MessageBlock from '@/shared/components/MessageBlock.vue'
 import { useTableSort } from '@/shared/composables/useTableSort'
 import { useTablePagination } from '@/shared/composables/useTablePagination'
 import { formatCurrency } from '@/shared/utils/format'
-import { toDisplayDateTime } from '@/modules/activity/utils/activityMapper'
+import { ActivityEnum, toDisplayDateTime } from '@/modules/activity/utils/activityMapper'
 import {
   ORDER_STATUS_FILTER_OPTIONS,
   ORDER_STATUS_OPTIONS,
@@ -49,6 +50,21 @@ const mailIconPaths = [
   'M4 6h16v12H4z',
   'm4 7 8 6 8-6',
 ]
+const cartIconPaths = [
+  'M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h7.2a2 2 0 0 0 2-1.6L21 7H6',
+  'M10 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z',
+  'M17 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z',
+]
+const truckIconPaths = [
+  'M3 7h11v9H3z',
+  'M14 10h4l3 3v3h-7z',
+  'M7 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z',
+  'M17 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z',
+]
+
+const BULK_STATUS_PREORDER_COMPLETED = 4
+const BULK_STATUS_STOCKED = 5
+const BULK_SOURCE_CUSTOMER_PAID = 3
 
 const errorMessage = ref('')
 const statusMessage = ref('')
@@ -96,8 +112,13 @@ const {
 
 const activityTabs = [
   { value: ORDER_ACTIVITY_TABS.INCOMPLETE, label: '尚未結單' },
-  { value: ORDER_ACTIVITY_TABS.CLOSED, label: '已結單' },
-  { value: ORDER_ACTIVITY_TABS.PREORDER_COMPLETED, label: '預購已完成' },
+  {
+    value: ORDER_ACTIVITY_TABS.CLOSED,
+    label: '已結單',
+    bulkStatus: BULK_STATUS_PREORDER_COMPLETED,
+    bulkSourceStatus: BULK_SOURCE_CUSTOMER_PAID,
+  },
+  { value: ORDER_ACTIVITY_TABS.PREORDER_COMPLETED, label: '預購已完成', bulkStatus: BULK_STATUS_STOCKED, bulkSourceStatus: BULK_STATUS_PREORDER_COMPLETED },
   { value: ORDER_ACTIVITY_TABS.STOCKED, label: '商品已入庫' },
   { value: ORDER_ACTIVITY_TABS.COMPLETED, label: '已完成' },
 ]
@@ -105,6 +126,19 @@ const activityTabs = [
 const currentTabConfig = computed(() =>
   activityTabs.find((tab) => tab.value === activityTab.value) || activityTabs[0],
 )
+
+const currentTabBulkStatus = computed(() => currentTabConfig.value.bulkStatus || null)
+const currentTabBulkSourceStatus = computed(() => currentTabConfig.value.bulkSourceStatus ?? null)
+
+// 一鍵批次改狀態只在活動「已結束」時開放（活動仍在進行中時，訂單流程還沒進到收單／出貨階段）。
+const canBulkUpdateSelectedActivity = computed(() =>
+  Number(selectedActivity.value?.status) === ActivityEnum.Ended,
+)
+const bulkDisabledReason = computed(() => {
+  if (!selectedActivityId.value) return '請先選擇活動'
+  if (!canBulkUpdateSelectedActivity.value) return '活動尚未結束，無法批次更新'
+  return ''
+})
 
 const {
   sortedItems: sortedOrders,
@@ -132,7 +166,6 @@ const {
   formErrorMessage,
   isSavingOrder,
   formProductOptions,
-  openCreateOrder,
   openEditOrder,
   closeOrderDialog,
   addOrderItem,
@@ -160,6 +193,9 @@ const {
 
 const deleteTargetOrder = ref(null)
 const isDeletingOrder = ref(false)
+
+const bulkStatusTarget = ref(null)
+const isBulkUpdatingStatus = ref(false)
 
 const resetFilters = () => {
   searchKeyword.value = ''
@@ -221,6 +257,46 @@ const confirmDeleteOrder = async () => {
     errorMessage.value = err?.message || '訂單刪除失敗'
   } finally {
     isDeletingOrder.value = false
+  }
+}
+
+const openBulkStatusDialog = (orderStatus) => {
+  if (!selectedActivityId.value || !canBulkUpdateSelectedActivity.value) return
+  bulkStatusTarget.value = {
+    orderStatus,
+    sourceOrderStatus: currentTabBulkSourceStatus.value,
+  }
+}
+
+const closeBulkStatusDialog = () => {
+  bulkStatusTarget.value = null
+}
+
+const confirmBulkStatusUpdate = async () => {
+  if (!bulkStatusTarget.value || !selectedActivityId.value) return
+
+  isBulkUpdatingStatus.value = true
+  errorMessage.value = ''
+  statusMessage.value = ''
+
+  try {
+    const result = await bulkUpdateActivityOrderStatus(
+      selectedActivityId.value,
+      bulkStatusTarget.value.orderStatus,
+      bulkStatusTarget.value.sourceOrderStatus,
+    )
+    const updatedCount = Number(result?.updatedCount ?? 0)
+    const label = getOrderStatusLabel(bulkStatusTarget.value.orderStatus)
+    statusMessage.value = updatedCount > 0
+      ? `已將 ${updatedCount} 筆訂單狀態改為「${label}」`
+      : `沒有需要更新的訂單（皆已為「${label}」或已取消）`
+    closeBulkStatusDialog()
+    await loadOrders()
+    newOrdersStore.refresh()
+  } catch (err) {
+    errorMessage.value = err?.message || '批次更新訂單狀態失敗'
+  } finally {
+    isBulkUpdatingStatus.value = false
   }
 }
 
@@ -424,17 +500,32 @@ onUnmounted(() => {
           </div>
           <div class="orders-header-actions">
             <button
-              class="add-order-button"
+              v-if="currentTabBulkStatus === BULK_STATUS_PREORDER_COMPLETED"
+              class="bulk-status-button bulk-status-button--preorder"
               type="button"
-              aria-label="新增訂單"
-              :title="selectedActivityReadOnly ? '此活動非進行中，無法新增訂單' : '新增訂單'"
-              :disabled="!selectedActivityId || selectedActivityReadOnly"
-              @click="openCreateOrder"
+              aria-label="將此活動所有訂單改為預購已完成"
+              :title="bulkDisabledReason || '一鍵改為「預購已完成」'"
+              :disabled="!selectedActivityId || !canBulkUpdateSelectedActivity || isBulkUpdatingStatus"
+              @click="openBulkStatusDialog(BULK_STATUS_PREORDER_COMPLETED)"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 5v14" />
-                <path d="M5 12h14" />
+                <path v-for="path in cartIconPaths" :key="path" :d="path" />
               </svg>
+              <span>一鍵改為「預購已完成」</span>
+            </button>
+            <button
+              v-if="currentTabBulkStatus === BULK_STATUS_STOCKED"
+              class="bulk-status-button bulk-status-button--stocked"
+              type="button"
+              aria-label="將此活動所有訂單改為商品已入庫"
+              :title="bulkDisabledReason || '一鍵改為「商品已入庫」'"
+              :disabled="!selectedActivityId || !canBulkUpdateSelectedActivity || isBulkUpdatingStatus"
+              @click="openBulkStatusDialog(BULK_STATUS_STOCKED)"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path v-for="path in truckIconPaths" :key="path" :d="path" />
+              </svg>
+              <span>一鍵改為「商品已入庫」</span>
             </button>
             <span class="total-pill">{{ totalCount }} 筆</span>
           </div>
@@ -695,6 +786,16 @@ onUnmounted(() => {
       :is-deleting="isDeletingOrder"
       @close="closeDeleteDialog"
       @confirm="confirmDeleteOrder"
+    />
+
+    <OrderBulkStatusConfirmDialog
+      v-if="bulkStatusTarget"
+      :activity-name="selectedActivity?.activityName || ''"
+      :order-status="bulkStatusTarget.orderStatus"
+      :source-order-status="bulkStatusTarget.sourceOrderStatus"
+      :is-submitting="isBulkUpdatingStatus"
+      @close="closeBulkStatusDialog"
+      @confirm="confirmBulkStatusUpdate"
     />
   </PageShell>
 </template>
