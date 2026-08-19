@@ -22,7 +22,6 @@ const primaryStats = computed(() => [
 const pendingStats = computed(() => [
   { label: '待出貨', value: formatNumber(k.value.pendingToShip) },
   { label: '待付款', value: formatNumber(k.value.pendingUnpaid) },
-  { label: '退款中', value: formatNumber(k.value.pendingRefunding) },
 ])
 </script>
 

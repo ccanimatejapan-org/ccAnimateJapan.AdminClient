@@ -5,7 +5,6 @@ import PanelCard from '@/shared/components/PanelCard.vue'
 import MessageBlock from '@/shared/components/MessageBlock.vue'
 import ReportDonut from '@/modules/report/components/ReportDonut.vue'
 import {
-  getDeliveryStatusLabel,
   getOrderStatusLabel,
   getPaymentStatusLabel,
 } from '@/modules/order/utils/orderStatuses'
@@ -19,7 +18,6 @@ const props = defineProps({
 
 const orderItems = computed(() => props.overview?.orderStatusBreakdown || [])
 const paymentItems = computed(() => props.overview?.paymentStatusBreakdown || [])
-const deliveryItems = computed(() => props.overview?.deliveryStatusBreakdown || [])
 const deliveryTypeItems = computed(() => props.overview?.deliveryTypeBreakdown || [])
 
 const hasOrderData = computed(() => orderItems.value.some((item) => Number(item.count) > 0))
@@ -40,9 +38,6 @@ const orderBarOptions = computed(() => ({
 
 const paymentLabels = computed(() => paymentItems.value.map((item) => getPaymentStatusLabel(item.code)))
 const paymentSeries = computed(() => paymentItems.value.map((item) => Number(item.count || 0)))
-
-const deliveryLabels = computed(() => deliveryItems.value.map((item) => getDeliveryStatusLabel(item.code)))
-const deliverySeries = computed(() => deliveryItems.value.map((item) => Number(item.count || 0)))
 
 const deliveryTypeLabels = computed(() =>
   deliveryTypeItems.value.map((item) => item.label || `配送 #${item.code}`),
@@ -66,7 +61,6 @@ const deliveryTypeSeries = computed(() => deliveryTypeItems.value.map((item) => 
 
       <div class="donut-grid">
         <ReportDonut title="付款狀態" :labels="paymentLabels" :series="paymentSeries" />
-        <ReportDonut title="配送狀態" :labels="deliveryLabels" :series="deliverySeries" />
         <ReportDonut title="配送方式" :labels="deliveryTypeLabels" :series="deliveryTypeSeries" />
       </div>
     </template>
@@ -93,7 +87,7 @@ const deliveryTypeSeries = computed(() => deliveryTypeItems.value.map((item) => 
 
 .donut-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   margin-top: 18px;
 }

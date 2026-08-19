@@ -23,12 +23,10 @@ import { useTablePagination } from '@/shared/composables/useTablePagination'
 import { formatCurrency } from '@/shared/utils/format'
 import { toDisplayDateTime } from '@/modules/activity/utils/activityMapper'
 import {
-  DELIVERY_STATUS_OPTIONS,
   ORDER_STATUS_FILTER_OPTIONS,
   ORDER_STATUS_OPTIONS,
   PAYMENT_STATUS_OPTIONS,
   SHIPPING_PAYMENT_STATUS_OPTIONS,
-  getDeliveryStatusLabel,
   getOrderStatusLabel,
   getPaymentStatusLabel,
   getShippingPaymentStatusLabel,
@@ -68,7 +66,6 @@ const pendingOrderCount = (activityId) => countsByActivity.value[activityId] || 
 const orderStatusOptions = ORDER_STATUS_FILTER_OPTIONS
 const mutationOrderStatusOptions = ORDER_STATUS_OPTIONS
 const paymentStatusOptions = PAYMENT_STATUS_OPTIONS
-const deliveryStatusOptions = DELIVERY_STATUS_OPTIONS
 
 const orderColumns = createOrderColumns()
 
@@ -604,10 +601,6 @@ onUnmounted(() => {
               <dt>付款狀態</dt>
               <dd>{{ getPaymentStatusLabel(selectedOrder.paymentStatus) }}</dd>
             </div>
-            <div>
-              <dt>物流狀態</dt>
-              <dd>{{ getDeliveryStatusLabel(selectedOrder.deliveryStatus) }}</dd>
-            </div>
             <div v-if="selectedOrder.shippingFee > 0">
               <dt>自行補運費</dt>
               <dd>{{ getShippingPaymentStatusLabel(selectedOrder.shippingPaymentStatus) }}（{{ formatCurrency(selectedOrder.shippingFee) }}）</dd>
@@ -656,7 +649,6 @@ onUnmounted(() => {
       :delivery-types="deliveryTypes"
       :order-status-options="mutationOrderStatusOptions"
       :payment-status-options="paymentStatusOptions"
-      :delivery-status-options="deliveryStatusOptions"
       :shipping-payment-status-options="SHIPPING_PAYMENT_STATUS_OPTIONS"
       :is-saving="isSavingOrder"
       :error-message="formErrorMessage"

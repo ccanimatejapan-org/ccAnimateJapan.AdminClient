@@ -30,10 +30,6 @@ const props = defineProps({
     type: Array,
     required: true,
   },
-  deliveryStatusOptions: {
-    type: Array,
-    required: true,
-  },
   shippingPaymentStatusOptions: {
     type: Array,
     required: true,
@@ -181,26 +177,6 @@ const getShippingPaymentStatusLabel = () =>
               class="custom-select-option"
               type="button"
               @click="selectOption('paymentStatus', option.value)"
-            >
-              {{ option.label }}
-            </button>
-          </CustomSelect>
-        </div>
-
-        <div v-if="props.editingOrderId" class="form-field">
-          <span class="field-label">物流狀態</span>
-          <CustomSelect
-            tone="orders"
-            :label="getStatusLabel('deliveryStatus', props.deliveryStatusOptions)"
-            :open="openSelectKey === 'deliveryStatus'"
-            @toggle="toggleSelect('deliveryStatus')"
-          >
-            <button
-              v-for="option in props.deliveryStatusOptions"
-              :key="option.value"
-              class="custom-select-option"
-              type="button"
-              @click="selectOption('deliveryStatus', option.value)"
             >
               {{ option.label }}
             </button>

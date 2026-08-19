@@ -80,7 +80,6 @@ export const useOrderForm = ({
         deliveryTypeId: detail.deliveryType?.id || '',
         orderStatus: detail.orderStatus || 1,
         paymentStatus: detail.paymentStatus || 1,
-        deliveryStatus: detail.deliveryStatus || 1,
         shippingFee: detail.shippingFee || 0,
         shippingPaymentStatus: detail.shippingPaymentStatus || 0,
         items: (detail.items || []).map((item) => ({

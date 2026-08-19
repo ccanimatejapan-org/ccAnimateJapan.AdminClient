@@ -16,7 +16,6 @@ const makeValidForm = (overrides = {}) => ({
   deliveryTypeId: 2,
   orderStatus: 1,
   paymentStatus: 5,
-  deliveryStatus: 6,
   items: [{ productId: 3, amount: 2, info: '' }],
   ...overrides,
 })
@@ -29,7 +28,6 @@ test('createEmptyOrderItem and createEmptyOrderForm produce the expected default
   assert.equal(form.deliveryTypeId, '')
   assert.equal(form.orderStatus, 1)
   assert.equal(form.paymentStatus, 1)
-  assert.equal(form.deliveryStatus, 1)
   assert.deepEqual(form.items, [{ productId: '', amount: 1, info: '' }])
 })
 
@@ -57,13 +55,12 @@ test('buildCreateOrderPayload coerces numbers, trims strings and nulls blank inf
   })
 })
 
-test('buildUpdateOrderPayload adds the three status fields as numbers', () => {
-  const form = makeValidForm({ orderStatus: '3', paymentStatus: '2', deliveryStatus: '4' })
+test('buildUpdateOrderPayload adds the status fields as numbers', () => {
+  const form = makeValidForm({ orderStatus: '3', paymentStatus: '2' })
   const payload = buildUpdateOrderPayload(form, 7)
 
   assert.equal(payload.orderStatus, 3)
   assert.equal(payload.paymentStatus, 2)
-  assert.equal(payload.deliveryStatus, 4)
   assert.equal(payload.activityId, 7)
 })
 
@@ -77,12 +74,12 @@ test('validateOrderForm lists every missing required field for a blank create fo
 })
 
 test('validateOrderForm checks status fields only when editing', () => {
-  const form = makeValidForm({ orderStatus: 999, paymentStatus: 999, deliveryStatus: 999 })
+  const form = makeValidForm({ orderStatus: 999, paymentStatus: 999 })
 
   assert.equal(validateOrderForm(form, { isEdit: false, activityId: 7 }), null)
   assert.equal(
     validateOrderForm(form, { isEdit: true, activityId: 7 }),
-    '請填寫：訂單狀態、付款狀態、物流狀態。',
+    '請填寫：訂單狀態、付款狀態。',
   )
 })
 
