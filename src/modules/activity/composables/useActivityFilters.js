@@ -41,10 +41,12 @@ export const useActivityFilters = ({
     activity: {
       start: 'activityDateStart',
       end: 'activityDateEnd',
+      endTime: '23:59',
     },
     officialShipping: {
       start: 'officialShippingStartDate',
       end: 'officialShippingEndDate',
+      endTime: '23:59',
     },
   }
   const openFilterSelectKey = ref('')

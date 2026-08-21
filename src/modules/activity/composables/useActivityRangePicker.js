@@ -6,10 +6,12 @@ const defaultRangeFieldKeys = {
   activity: {
     start: 'activityStartDate',
     end: 'activityEndDate',
+    endTime: '20:00',
   },
   officialShipping: {
     start: 'officialShippingStartDate',
     end: 'officialShippingEndDate',
+    endTime: '23:59',
   },
 }
 
@@ -50,7 +52,7 @@ const getTodayMonthKey = () => {
   return `${today.getFullYear()}-${pad(today.getMonth() + 1)}`
 }
 
-const toDateRangeValue = (date, isEnd = false) => `${date}T${isEnd ? '23:59' : '00:00'}`
+const toDateRangeValue = (date, time = '00:00') => `${date}T${time}`
 
 export const useActivityRangePicker = (
   form,
@@ -191,11 +193,11 @@ export const useActivityRangePicker = (
 
     if (date < values.start) {
       form[fields.start] = toDateRangeValue(date)
-      form[fields.end] = toDateRangeValue(values.start, true)
+      form[fields.end] = toDateRangeValue(values.start, fields.endTime || '23:59')
       return true
     }
 
-    form[fields.end] = toDateRangeValue(date, true)
+    form[fields.end] = toDateRangeValue(date, fields.endTime || '23:59')
     return true
   }
 

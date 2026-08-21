@@ -108,6 +108,7 @@ XxxPage.vue (orchestration)
 
 **活動表單（`activity` 模組 `ActivityFormDialog.vue` + `useActivityForm.js`）**
 
+- **活動期間的結束時間預設為 20:00**：管理員從日期區間選擇器選取活動結束日期時，`activityEndDate` 帶入當日 `20:00`；官方出貨期間與列表日期篩選仍以當日 `23:59` 作為結束邊界。
 - **現貨活動不顯示運費模式與開團設定**：整段運費/開團 UI 以 `v-if="form.isPreOrder"` 包住；切到現貨時 watch 會把官方出貨期間清空、運費模式強制回 `NoShipping`、分攤規則回 `ByQuantity`、關閉「允許顧客補運費」，避免殘留預購設定被存入或卡驗證。
 - **預購**才顯示且必填「官方出貨期間」：表單欄位與 API payload 使用 `officialShippingStartTime` / `officialShippingEndTime`；現貨 payload 不送官方出貨欄位，列表與表格以 `-` 顯示。
 - **複製活動**共用活動表單的 `copy` mode：點擊複製先預填來源活動（名稱加「（複製）」），狀態強制 `NotStarted (0)`，預購開團狀態強制 `Recruiting`、現貨為 `NotRequired`；儲存時才以 multipart `POST /api/activities/{sourceId}/copy` 建立副本，不把來源 id 塞進 payload `id`。
