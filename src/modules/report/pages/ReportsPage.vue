@@ -26,6 +26,7 @@ const activities = ref([])
 const topProducts = ref([])
 const inventory = ref(null)
 const margins = ref(null)
+const marginsLoading = ref(false)
 const errorMessage = ref('')
 
 let requestToken = 0
@@ -35,6 +36,8 @@ const toIso = (date) => (date ? date.toISOString() : undefined)
 const loadAll = async () => {
   const token = ++requestToken
   errorMessage.value = ''
+  margins.value = null
+  marginsLoading.value = true
 
   const range = { startDate: toIso(period.value.start), endDate: toIso(period.value.end) }
 
@@ -57,6 +60,8 @@ const loadAll = async () => {
   } catch (err) {
     if (token !== requestToken) return
     errorMessage.value = err?.message || '報表資料載入失敗'
+  } finally {
+    if (token === requestToken) marginsLoading.value = false
   }
 }
 
@@ -73,19 +78,19 @@ onMounted(loadAll)
     <PageHeading
       eyebrow="Analytics"
       title="報表分析"
-      copy="營運數據總覽：營收、訂單、活動、商品、庫存與毛利。"
+      copy="先看已收款損益，再對照其餘營運指標；損益僅計已收款且訂單狀態為已付款至完成的訂單。"
     />
 
     <ReportFilterBar :period="period" @change="onPeriodChange" />
 
     <MessageBlock v-if="errorMessage" tone="error">{{ errorMessage }}</MessageBlock>
 
+    <MarginPanel :data="margins" :loading="marginsLoading" />
     <ReportKpiCards :kpis="overview?.kpis" />
     <RevenueTrendChart :trend="overview?.revenueTrend || []" :granularity="period.granularity" />
     <OrderBreakdownPanel :overview="overview" />
     <ActivityPerformancePanel :items="activities" />
     <TopProductsPanel :items="topProducts" />
     <InventoryHealthPanel :data="inventory" />
-    <MarginPanel :data="margins" />
   </PageShell>
 </template>

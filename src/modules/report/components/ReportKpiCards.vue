@@ -12,7 +12,7 @@ const props = defineProps({
 const k = computed(() => props.kpis || {})
 
 const primaryStats = computed(() => [
-  { label: '總營收（不含取消）', value: formatCurrency(k.value.totalRevenue), accent: '#5468a6' },
+  { label: '未取消訂單金額', value: formatCurrency(k.value.totalRevenue), accent: '#5468a6' },
   { label: '已收款', value: formatCurrency(k.value.collectedAmount), accent: '#277867' },
   { label: '待收款', value: formatCurrency(k.value.outstandingAmount), accent: '#c48445' },
   { label: '訂單數', value: formatNumber(k.value.orderCount), accent: '#7a5bb0' },

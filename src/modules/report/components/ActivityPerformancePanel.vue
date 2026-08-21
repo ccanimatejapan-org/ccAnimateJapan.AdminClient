@@ -19,7 +19,7 @@ const statusLabel = (status) =>
 const topItems = computed(() => props.items.slice(0, 8))
 
 const barSeries = computed(() => [
-  { name: '營收', data: topItems.value.map((item) => Number(item.revenue || 0)) },
+  { name: '未取消訂單金額', data: topItems.value.map((item) => Number(item.revenue || 0)) },
 ])
 
 const barOptions = computed(() => ({
@@ -38,8 +38,8 @@ const barOptions = computed(() => ({
 
 <template>
   <PanelCard>
-    <div class="panel-head"><h2>活動表現</h2></div>
-    <MessageBlock v-if="!items.length" tone="empty">此期間沒有活動訂單</MessageBlock>
+    <div class="panel-head"><h2>活動表現（未取消訂單金額）</h2></div>
+    <MessageBlock v-if="!items.length" tone="empty">此期間沒有未取消的活動訂單</MessageBlock>
     <template v-else>
       <apexchart type="bar" height="300" :options="barOptions" :series="barSeries" />
       <div class="table-wrap">
@@ -49,7 +49,7 @@ const barOptions = computed(() => ({
               <th>活動</th>
               <th>狀態</th>
               <th class="num">訂單數</th>
-              <th class="num">營收</th>
+              <th class="num">未取消訂單金額</th>
               <th class="num">商品數</th>
               <th class="num">客單價</th>
             </tr>
