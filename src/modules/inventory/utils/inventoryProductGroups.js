@@ -8,6 +8,11 @@ export const UNCLASSIFIED_ACTIVITY_NAME = '未分類活動'
 export const UNNAMED_ACTIVITY_NAME = '未命名活動'
 
 const isPreOrderProduct = (product) => product?.isPreOrder === true
+const hasInventoryAmount = (product) =>
+  product?.amount !== 0 || product?.orderedAmount !== 0
+
+export const filterInventoryProductsByInventoryVisibility = (products = []) =>
+  products.filter(hasInventoryAmount)
 
 export const filterInventoryProductsByMode = (products = [], mode) =>
   products.filter((product) =>

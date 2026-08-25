@@ -8,6 +8,9 @@ import {
   mapProductTypeFromApi,
 } from '@/modules/activityProduct/utils/productMapper'
 import {
+  filterInventoryProductsByInventoryVisibility,
+} from '@/modules/inventory/utils/inventoryProductGroups'
+import {
   hasActiveProductFilters,
   matchesProductFilters,
 } from '@/modules/activityProduct/utils/productFilters'
@@ -40,14 +43,16 @@ export const useInventoryProducts = ({ searchFilters, errorMessage }) => {
 
     try {
       const responseProducts = await listInventoryProducts()
-      products.value = responseProducts.map((product) => {
-        const mappedProduct = mapProductFromApi(product)
-        return {
-          ...mappedProduct,
-          activityName: product.activityName || '',
-          isPreOrder: product.isPreOrder === true,
-        }
-      })
+      products.value = filterInventoryProductsByInventoryVisibility(
+        responseProducts.map((product) => {
+          const mappedProduct = mapProductFromApi(product)
+          return {
+            ...mappedProduct,
+            activityName: product.activityName || '',
+            isPreOrder: product.isPreOrder === true,
+          }
+        }),
+      )
     } catch (err) {
       errorMessage.value = err.message || '載入庫存商品失敗。'
       products.value = []

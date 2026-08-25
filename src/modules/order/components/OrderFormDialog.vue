@@ -83,7 +83,7 @@ const getProductLabel = (item) => {
   const product = props.products.find((productItem) => Number(productItem.productId) === productId)
   if (!product) return `#${productId}`
 
-  return `${product.name || `#${productId}`} - ${product.activityName || `活動 #${product.activityId}`}`
+  return product.name || `#${productId}`
 }
 
 const hasShippingTopUp = () => Number(props.form.shippingFee) > 0
@@ -243,7 +243,7 @@ const getShippingPaymentStatusLabel = () =>
                     type="button"
                     @click="selectItemProduct(item, product.productId)"
                   >
-                    {{ product.name || `#${product.productId}` }} - {{ product.activityName || `活動 #${product.activityId}` }}
+                    {{ product.name || `#${product.productId}` }}
                   </button>
                 </CustomSelect>
               </div>

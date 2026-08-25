@@ -9,6 +9,7 @@ import {
   countInventoryProductsByMode,
   createInventoryActivityCollapseKey,
   createInventoryActivityGroups,
+  filterInventoryProductsByInventoryVisibility,
   filterInventoryProductsByMode,
   getInventoryModeEmptyText,
 } from './inventoryProductGroups.js'
@@ -52,6 +53,76 @@ test('counts filtered products for both inventory modes', () => {
     [INVENTORY_MODES.readyStock]: 2,
     [INVENTORY_MODES.preOrder]: 2,
   })
+})
+
+test('hides products whose amount and orderedAmount are both zero', () => {
+  const products = [
+    { id: 1, amount: 0, orderedAmount: 0 },
+    { id: 2, amount: 2, orderedAmount: 0 },
+    { id: 3, amount: -3, orderedAmount: 0 },
+    { id: 4, amount: 0, orderedAmount: 7 },
+  ]
+
+  assert.deepEqual(
+    filterInventoryProductsByInventoryVisibility(products).map((product) => product.id),
+    [2, 3, 4],
+  )
+})
+
+test('keeps products with either amount or orderedAmount non-zero, including negative values', () => {
+  const products = [
+    { id: 1, amount: 0, orderedAmount: -2 },
+    { id: 2, amount: 5, orderedAmount: 0 },
+    { id: 3, amount: 0, orderedAmount: 0 },
+  ]
+
+  assert.deepEqual(
+    filterInventoryProductsByInventoryVisibility(products).map((product) => product.id),
+    [1, 2],
+  )
+})
+
+test('counts only visible products for ready and pre-order modes', () => {
+  const products = [
+    { id: 1, isPreOrder: false, amount: 0, orderedAmount: 0 },
+    { id: 2, isPreOrder: false, amount: 0, orderedAmount: 10 },
+    { id: 3, isPreOrder: true, amount: -4, orderedAmount: 0 },
+    { id: 4, isPreOrder: true, amount: 0, orderedAmount: 0 },
+  ]
+  const visibleProducts = filterInventoryProductsByInventoryVisibility(products)
+
+  assert.deepEqual(countInventoryProductsByMode(visibleProducts), {
+    [INVENTORY_MODES.readyStock]: 1,
+    [INVENTORY_MODES.preOrder]: 1,
+  })
+})
+
+test('keeps only visible products in activity groups', () => {
+  const products = [
+    { id: 'zero', activityId: 10, activityName: '活動 A', amount: 0, orderedAmount: 0 },
+    { id: 'non-zero', activityId: 10, activityName: '活動 A', amount: 1, orderedAmount: 0 },
+    { id: 'negative', activityId: 10, activityName: '活動 A', amount: -1, orderedAmount: 2 },
+  ]
+  const visibleProducts = filterInventoryProductsByInventoryVisibility(products)
+  const groups = createInventoryActivityGroups(visibleProducts)
+
+  assert.equal(groups.length, 1)
+  assert.equal(groups[0].activityName, '活動 A')
+  assert.equal(groups[0].count, 2)
+  assert.deepEqual(groups[0].products.map((product) => product.id), [
+    'non-zero',
+    'negative',
+  ])
+})
+
+test('drops activity groups that become empty after visibility filtering', () => {
+  const products = [
+    { id: 1, activityId: 10, amount: 0, orderedAmount: 0 },
+    { id: 2, activityId: 10, amount: 0, orderedAmount: 0 },
+  ]
+  const visibleProducts = filterInventoryProductsByInventoryVisibility(products)
+
+  assert.deepEqual(createInventoryActivityGroups(visibleProducts), [])
 })
 
 test('groups products with the same activity id and preserves product order', () => {
@@ -129,6 +200,17 @@ test('does not mutate the input array or product objects', () => {
   assert.deepEqual(products, [firstProduct, secondProduct])
   assert.equal(groups[0].products[0], firstProduct)
   assert.equal(groups[1].products[0], secondProduct)
+})
+
+test('does not mutate the input array passed to visibility filtering', () => {
+  const firstProduct = { id: 1, amount: 0, orderedAmount: 0 }
+  const secondProduct = { id: 2, amount: 1, orderedAmount: 0 }
+  const products = [firstProduct, secondProduct]
+
+  const visibleProducts = filterInventoryProductsByInventoryVisibility(products)
+
+  assert.deepEqual(products, [firstProduct, secondProduct])
+  assert.equal(visibleProducts[0], secondProduct)
 })
 
 test('creates mode-specific collapse keys including unclassified groups', () => {
