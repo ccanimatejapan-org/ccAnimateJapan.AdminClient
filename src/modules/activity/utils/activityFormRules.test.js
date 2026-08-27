@@ -15,6 +15,8 @@ import {
   mapActivityToActivityFormValues,
   normalizeActivityFormValuesForMode,
   validateActivityFormValues,
+  MAX_SHIPPING_AMOUNT,
+  MAX_GROUP_BUY_THRESHOLD,
 } from './activityFormRules.js'
 
 const entriesToObject = (entries) =>
@@ -155,6 +157,32 @@ test('validation requires official shipping only for pre-order activities and re
 
   assert.equal(inStockWithLegacyStatus.isValid, false)
   assert.deepEqual(inStockWithLegacyStatus.missingFields, ['活動狀態'])
+})
+
+test('validation rejects shipping amounts and group-buy threshold above the max (M-05)', () => {
+  const overMaxCost = validateActivityFormValues({
+    form: validBaseForm({ shippingCost: MAX_SHIPPING_AMOUNT + 1 }),
+    hasSelectedImageFile: false,
+  })
+  assert.equal(overMaxCost.isValid, false)
+  assert.ok(overMaxCost.invalidFields.some((f) => f.includes('運費成本') && f.includes('不可超過')))
+
+  const overMaxThreshold = validateActivityFormValues({
+    form: validBaseForm({ groupBuyThreshold: MAX_GROUP_BUY_THRESHOLD + 1 }),
+    hasSelectedImageFile: false,
+  })
+  assert.equal(overMaxThreshold.isValid, false)
+  assert.ok(overMaxThreshold.invalidFields.some((f) => f.includes('開團/成團數量')))
+
+  // 邊界：剛好等於上限，不因上限被擋
+  const atMax = validateActivityFormValues({
+    form: validBaseForm({
+      shippingCost: MAX_SHIPPING_AMOUNT,
+      groupBuyThreshold: MAX_GROUP_BUY_THRESHOLD,
+    }),
+    hasSelectedImageFile: false,
+  })
+  assert.deepEqual(atMax.invalidFields, [])
 })
 
 test('validation accepts pre-order official shipping and rejects reversed ranges', () => {

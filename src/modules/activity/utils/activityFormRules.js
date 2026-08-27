@@ -13,6 +13,10 @@ import { sanitizeHtml } from '@/shared/utils/html'
 import { appendIfValue } from '@/shared/utils/formData'
 import { formatRequiredFieldsMessage, isBlankValue } from '@/shared/utils/validation'
 
+// 與後端 ActivityShippingRules 上限一致：避免超大金額在補運費分攤計算時 long 溢位(M-05)
+export const MAX_SHIPPING_AMOUNT = 100_000_000
+export const MAX_GROUP_BUY_THRESHOLD = 1_000_000
+
 export const ACTIVITY_FORM_MODES = Object.freeze({
   create: 'create',
   edit: 'edit',
@@ -187,6 +191,20 @@ export const validateActivityFormValues = ({ form, hasSelectedImageFile = false 
     !(Number(values.shippingCost) > 0)
   ) {
     missingFields.push('運費成本')
+  }
+
+  const shippingAmountFields = [
+    ['運費成本', values.shippingCost],
+    ['每件預收運費', values.perItemShipping],
+    ['免運門檻', values.freeShippingThreshold],
+  ]
+  for (const [label, amount] of shippingAmountFields) {
+    if (Number(amount) > MAX_SHIPPING_AMOUNT) {
+      invalidFields.push(`${label}不可超過 ${MAX_SHIPPING_AMOUNT.toLocaleString()}`)
+    }
+  }
+  if (Number(values.groupBuyThreshold) > MAX_GROUP_BUY_THRESHOLD) {
+    invalidFields.push(`開團/成團數量不可超過 ${MAX_GROUP_BUY_THRESHOLD.toLocaleString()}`)
   }
 
   if (!isWritableActivityStatus(values.status)) missingFields.push('活動狀態')
