@@ -93,9 +93,9 @@ defineEmits(['change', 'remove-existing', 'remove-new'])
   min-height: 176px;
   height: 100%;
   place-items: center;
-  border: 1px dashed #d8c7ba;
+  border: 1px dashed #9fc4b6;
   border-radius: 8px;
-  background: #fffdf9;
+  background: #f8fcfa;
   color: #384942;
   font-weight: 800;
   padding: 14px;
@@ -104,7 +104,7 @@ defineEmits(['change', 'remove-existing', 'remove-new'])
 
 .image-file-drop:hover {
   border-color: #277867;
-  background: #f8fff9;
+  background: #f8fcfa;
   color: #1f6154;
 }
 
@@ -129,9 +129,9 @@ defineEmits(['change', 'remove-existing', 'remove-new'])
   min-height: 176px;
   max-height: 236px;
   overflow: auto;
-  border: 1px solid #eaded2;
+  border: 1px solid #d8e6de;
   border-radius: 8px;
-  background: #fffdf9;
+  background: #f8fcfa;
   padding: 10px;
   gap: 10px;
 }
@@ -139,9 +139,9 @@ defineEmits(['change', 'remove-existing', 'remove-new'])
 .product-image-tile {
   position: relative;
   overflow: hidden;
-  border: 1px solid #eaded2;
+  border: 1px solid #d8e6de;
   border-radius: 8px;
-  background: #fffaf4;
+  background: #f4fbf7;
   aspect-ratio: 1;
 }
 
@@ -191,7 +191,7 @@ defineEmits(['change', 'remove-existing', 'remove-new'])
 }
 
 .remove-image-button:hover {
-  background: #9d3e46;
+  background: #1f6154;
 }
 
 .product-image-empty {
@@ -199,9 +199,9 @@ defineEmits(['change', 'remove-existing', 'remove-new'])
   min-height: 176px;
   height: 100%;
   place-items: center;
-  border: 1px solid #eaded2;
+  border: 1px solid #d8e6de;
   border-radius: 8px;
-  background: #fffdf9;
+  background: #f8fcfa;
   color: #59665f;
   font-size: 0.92rem;
   font-weight: 750;

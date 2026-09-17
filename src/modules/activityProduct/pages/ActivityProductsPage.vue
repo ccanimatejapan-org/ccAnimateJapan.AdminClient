@@ -565,6 +565,7 @@ watch(
       </section>
 
       <ProductTable
+        tone="product"
         :products="paginatedProducts"
         :columns="productTableColumns"
         :product-types="productTypes"

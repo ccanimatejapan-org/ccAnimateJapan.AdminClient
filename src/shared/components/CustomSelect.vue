@@ -59,6 +59,18 @@ defineEmits(['toggle'])
   --select-shell-background: #f4fbf7;
 }
 
+.custom-select--product .custom-select-trigger,
+.custom-select--inventory .custom-select-trigger,
+.custom-select--product .custom-select-menu,
+.custom-select--inventory .custom-select-menu {
+  border-color: #d8e6de;
+}
+
+.custom-select--product .custom-select-menu,
+.custom-select--inventory .custom-select-menu {
+  box-shadow: 0 18px 44px rgb(39 120 103 / 16%);
+}
+
 .custom-select--orders {
   --select-accent: #c48445;
   --select-accent-soft: #fff7eb;

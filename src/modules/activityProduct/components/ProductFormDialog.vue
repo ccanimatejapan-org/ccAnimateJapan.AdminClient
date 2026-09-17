@@ -249,7 +249,7 @@ const onPriceInput = (event) => {
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
-  border-bottom: 1px solid #dce9e1;
+  border-bottom: 1px solid #e3eee8;
   padding-bottom: 16px;
 }
 
@@ -335,7 +335,7 @@ const onPriceInput = (event) => {
 }
 
 .stock-status-switch input:checked + .stock-status-switch-track {
-  background: #b84d55;
+  background: #277867;
 }
 
 .stock-status-switch input:checked + .stock-status-switch-track .stock-status-switch-thumb {
@@ -343,7 +343,7 @@ const onPriceInput = (event) => {
 }
 
 .stock-status-switch input:focus-visible + .stock-status-switch-track {
-  box-shadow: 0 0 0 3px rgb(184 77 85 / 15%);
+  box-shadow: 0 0 0 3px rgb(39 120 103 / 15%);
 }
 
 .stock-status-switch-text {
@@ -400,6 +400,73 @@ const onPriceInput = (event) => {
 
 .dialog-actions :deep(.app-button--primary:hover:not(:disabled)) {
   background: #1f6154;
+}
+
+
+:deep(.form-field input),
+:deep(.form-field select),
+:deep(.form-field textarea) {
+  border-color: #d8e6de;
+  background: #f8fcfa;
+}
+
+:deep(.form-field input:focus),
+:deep(.form-field select:focus),
+:deep(.form-field textarea:focus) {
+  border-color: #277867;
+  box-shadow: 0 0 0 3px rgb(39 120 103 / 15%);
+}
+
+:deep(.icon-button) {
+  border-color: #d8e6de;
+  background: #f8fcfa;
+  color: #1f6154;
+}
+
+:deep(.icon-button:hover:not(:disabled)) {
+  border-color: #277867;
+  color: #1f6154;
+}
+
+:deep(.app-button--primary) {
+  background: #277867;
+}
+
+:deep(.app-button--primary:hover:not(:disabled)) {
+  background: #1f6154;
+}
+
+:deep(.app-button--pill.app-button--ghost) {
+  border-color: #d8e6de;
+  background: #f8fcfa;
+  color: #1f6154;
+}
+
+:deep(.app-button--pill.app-button--ghost:hover:not(:disabled)) {
+  border-color: #277867;
+  background: #f0faf4;
+  color: #1f6154;
+}
+
+:deep(.rich-html-editor) {
+  border-color: #d8e6de;
+  background: #f8fcfa;
+}
+
+:deep(.rich-html-toolbar) {
+  border-bottom-color: #e3eee8;
+  background: #f4fbf7;
+}
+
+:deep(.rich-html-toolbar button) {
+  border-color: #d8e6de;
+  background: #ffffff;
+  color: #1f6154;
+}
+
+:deep(.rich-html-toolbar button:hover) {
+  border-color: #277867;
+  color: #1f6154;
 }
 
 @media (max-width: 560px) {
