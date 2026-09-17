@@ -71,6 +71,13 @@ defineProps({
   color: #955916;
 }
 
+.message-block--success.message-block--module-customers,
+.message-block--empty.message-block--module-customers {
+  border-color: #d2b496;
+  background: #f4e9dc;
+  color: #3d2618;
+}
+
 .message-block--success.message-block--module-product,
 .message-block--empty.message-block--module-product,
 .message-block--success.message-block--module-inventory,
