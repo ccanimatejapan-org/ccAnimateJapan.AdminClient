@@ -46,7 +46,7 @@ const modules = [
     path: '/activities',
   },
   {
-    title: '作品管理',
+    title: '系統代碼管理',
     icon: 'art',
     accent: '#7a5bb0',
     path: '/animate-types',
