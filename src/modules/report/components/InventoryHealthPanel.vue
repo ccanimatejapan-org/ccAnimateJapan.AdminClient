@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import { useTableSort } from '@/shared/composables/useTableSort'
 import PanelCard from '@/shared/components/PanelCard.vue'
 import MessageBlock from '@/shared/components/MessageBlock.vue'
 import { formatCurrency, formatNumber } from '@/shared/utils/format'
@@ -21,6 +22,16 @@ const stats = computed(() => [
   { label: '待出貨數量', value: formatNumber(d.value.toShipUnits), tone: 'info' },
   { label: '庫存估值', value: formatCurrency(d.value.inventoryValue), tone: 'info' },
 ])
+
+const columns = [
+  { key: 'name', label: '商品', sortable: true, getValue: (item) => item.name || ('#' + item.productId) },
+  { key: 'activityName', label: '活動', sortable: true, getValue: (item) => item.activityName || '' },
+  { key: 'stock', label: '庫存', sortable: true, align: 'num', getValue: (item) => Number(item.stock || 0) },
+  { key: 'orderedAmount', label: '待出貨', sortable: true, align: 'num', getValue: (item) => Number(item.orderedAmount || 0) },
+  { key: 'status', label: '狀態', sortable: true, getValue: (item) => (item.isOutStock ? '缺貨' : '低庫存') },
+]
+const { sortedItems, isSortActive, toggleSort, getSortAriaSort, getSortButtonLabel, getSortIndicator } = useTableSort(items, columns)
+
 </script>
 
 <template>
@@ -39,16 +50,28 @@ const stats = computed(() => [
       <MessageBlock v-if="!items.length" tone="empty">沒有缺貨或低庫存商品</MessageBlock>
       <table v-else>
         <thead>
-          <tr>
-            <th>商品</th>
-            <th>活動</th>
-            <th class="num">庫存</th>
-            <th class="num">待出貨</th>
-            <th>狀態</th>
-          </tr>
+<tr>
+            <th
+              v-for="column in columns"
+              :key="column.key"
+              :class="column.align"
+              :aria-sort="getSortAriaSort(column)"
+            >
+              <button
+                class="table-sort-button"
+                type="button"
+                :class="{ 'is-active': isSortActive(column), 'is-num': column.align === 'num' }"
+                :aria-label="getSortButtonLabel(column)"
+                @click="toggleSort(column)"
+              >
+                <span>{{ column.label }}</span>
+                <span class="table-sort-icon" aria-hidden="true">{{ getSortIndicator(column) }}</span>
+              </button>
+            </th>
+            </tr>
         </thead>
         <tbody>
-          <tr v-for="item in items" :key="item.productId">
+          <tr v-for="item in sortedItems" :key="item.productId">
             <td>{{ item.name || `#${item.productId}` }}</td>
             <td>{{ item.activityName || '—' }}</td>
             <td class="num">{{ formatNumber(item.stock) }}</td>

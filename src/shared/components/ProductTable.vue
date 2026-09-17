@@ -338,7 +338,11 @@ const getProductTypeName = (productTypeId) => {
 
 .table-sort-button:hover,
 .table-sort-button.is-active {
-  color: #1f6154;
+  color: #111111;
+}
+
+.table-sort-button.is-active {
+  font-weight: 900;
 }
 
 .table-sort-icon {
@@ -351,7 +355,7 @@ const getProductTypeName = (productTypeId) => {
 }
 
 .table-sort-button.is-active .table-sort-icon {
-  color: #1f6154;
+  color: #111111;
 }
 
 .product-name {

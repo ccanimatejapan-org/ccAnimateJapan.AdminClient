@@ -614,7 +614,11 @@ th {
 
 .table-sort-button:hover,
 .table-sort-button.is-active {
-  color: #8a5b24;
+  color: #111111;
+}
+
+.table-sort-button.is-active {
+  font-weight: 900;
 }
 
 .sort-indicator {

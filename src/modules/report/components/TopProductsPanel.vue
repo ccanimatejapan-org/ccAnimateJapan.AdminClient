@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import { useTableSort } from '@/shared/composables/useTableSort'
 import apexchart from 'vue3-apexcharts'
 import PanelCard from '@/shared/components/PanelCard.vue'
 import MessageBlock from '@/shared/components/MessageBlock.vue'
@@ -25,6 +26,15 @@ const barOptions = computed(() => ({
   grid: { borderColor: '#eef1f6' },
   tooltip: { y: { formatter: (value) => `${value} 件` } },
 }))
+
+const columns = [
+  { key: 'name', label: '商品', sortable: true, getValue: (item) => item.name || ('#' + item.productId) },
+  { key: 'activityName', label: '活動', sortable: true, getValue: (item) => item.activityName || '' },
+  { key: 'qtySold', label: '數量', sortable: true, align: 'num', getValue: (item) => Number(item.qtySold || 0) },
+  { key: 'revenue', label: '銷售額', sortable: true, align: 'num', getValue: (item) => Number(item.revenue || 0) },
+]
+const { sortedItems, isSortActive, toggleSort, getSortAriaSort, getSortButtonLabel, getSortIndicator } = useTableSort(computed(() => props.items), columns)
+
 </script>
 
 <template>
@@ -36,15 +46,28 @@ const barOptions = computed(() => ({
       <div class="table-wrap">
         <table>
           <thead>
-            <tr>
-              <th>商品</th>
-              <th>活動</th>
-              <th class="num">數量</th>
-              <th class="num">銷售額</th>
+<tr>
+              <th
+                v-for="column in columns"
+                :key="column.key"
+                :class="column.align"
+                :aria-sort="getSortAriaSort(column)"
+              >
+                <button
+                  class="table-sort-button"
+                  type="button"
+                  :class="{ 'is-active': isSortActive(column), 'is-num': column.align === 'num' }"
+                  :aria-label="getSortButtonLabel(column)"
+                  @click="toggleSort(column)"
+                >
+                  <span>{{ column.label }}</span>
+                  <span class="table-sort-icon" aria-hidden="true">{{ getSortIndicator(column) }}</span>
+                </button>
+              </th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in items" :key="item.productId">
+            <tr v-for="item in sortedItems" :key="item.productId">
               <td>{{ item.name || `#${item.productId}` }}</td>
               <td>{{ item.activityName || '—' }}</td>
               <td class="num">{{ formatNumber(item.qtySold) }}</td>
