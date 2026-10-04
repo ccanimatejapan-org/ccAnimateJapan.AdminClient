@@ -33,7 +33,7 @@ src/
 │  └─ constants/        # routes.js（ROUTE_NAMES）
 └─ modules/             # 功能模組
    ├─ dashboard/  auth/  activity/  activityProduct/
-   └─ animateType/  inventory/  order/  report/
+   └─ animateType/  inventory/  order/  report/  customer/
 ```
 
 每個模組內部結構（依需要）：
@@ -87,7 +87,7 @@ XxxPage.vue (orchestration)
 
 ## 跨模組相依
 - `shared/` **不可** import `modules/`。
-- 模組之間原則上不互相 import；但本專案領域天然巢狀（活動 ⊃ 商品 ⊃ 訂單 ⊃ 庫存、報表跨多域），少數**領域相依**是允許的，例如 `inventory` 取用 `order`/`activityProduct` 的 api、`report` 取用 `activity` 的 mapper。新增此類相依前先想清楚方向，避免循環。
+- 模組之間原則上不互相 import；但本專案領域天然巢狀（活動 ⊃ 商品 ⊃ 訂單 ⊃ 庫存、報表跨多域），少數**領域相依**是允許的，例如 `inventory` 取用 `order`/`activityProduct` 的 api、`report` 取用 `activity` 的 mapper、`customer` 取用 `order` 的訂單狀態標籤。新增此類相依前先想清楚方向，避免循環。
 
 ## 新增功能放哪裡
 - 新 API：在該模組 `api/xxxApi.js` 加函式（呼叫 httpClient），endpoint 字串只出現在 api 檔。
@@ -102,7 +102,7 @@ XxxPage.vue (orchestration)
 - route name：`ROUTE_NAMES.XXX`。
 
 ## 既有模組
-`dashboard`（功能入口）、`auth`（登入）、`activity`（活動）、`activityProduct`（活動商品）、`animateType`（作品/動漫種類）、`inventory`（庫存）、`order`（訂單）、`report`（報表分析）。
+`dashboard`（功能入口）、`auth`（登入）、`activity`（活動）、`activityProduct`（活動商品）、`animateType`（作品/動漫種類）、`inventory`（庫存）、`order`（訂單）、`customer`（顧客）、`report`（報表分析）。
 
 ## 功能備註：運費模式 / 補運費 / 訂單總額
 

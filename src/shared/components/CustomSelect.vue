@@ -78,6 +78,13 @@ defineEmits(['toggle'])
   --select-shell-background: #fff7eb;
 }
 
+.custom-select--customers {
+  --select-accent: #5c3820;
+  --select-accent-soft: #f4e9dc;
+  --select-accent-text: #3d2618;
+  --select-shell-background: #faf5ef;
+}
+
 .custom-select-trigger {
   display: flex;
   width: 100%;
