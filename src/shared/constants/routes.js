@@ -10,4 +10,5 @@ export const ROUTE_NAMES = {
   INVENTORY: 'Inventory',
   ORDERS: 'Orders',
   REPORTS: 'Reports',
+  WISH_POOLS: 'WishPools',
 }

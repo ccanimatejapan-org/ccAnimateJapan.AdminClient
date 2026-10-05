@@ -14,6 +14,7 @@
   - `src/modules/activity/utils/activityMapper.js`（活動狀態 `ActivityEnum`、可讀狀態 `activityStatusDisplayOptions`、可寫狀態 `activityStatusOptions`、運費模式 `ShippingMode`、分攤規則 `ShippingShareRule`、開團狀態 `GroupBuyStatus` + 中文標籤）
   - `src/modules/order/utils/orderStatuses.js`（訂單 / 付款 / 物流 / 訂單商品 / 補運費付款 各狀態）
   - `src/modules/order/utils/activityOrderStatus.js`（可下單 / 唯讀活動狀態；目前只有 `Started (3)` 可新建訂單，legacy `Preparing (1)` / `PreparationEnded (2)` 僅可讀）
+  - `src/modules/wishPool/utils/wishPoolDecisions.js`（許願池回覆 `Pending` / `Opened` / `NotOpened`，與活動 `groupBuyStatus` 分開）
 
 ## 目錄總覽
 
@@ -33,7 +34,7 @@ src/
 │  └─ constants/        # routes.js（ROUTE_NAMES）
 └─ modules/             # 功能模組
    ├─ dashboard/  auth/  activity/  activityProduct/
-   └─ animateType/  inventory/  order/  report/
+   └─ animateType/  inventory/  order/  report/  wishPool/
 ```
 
 每個模組內部結構（依需要）：
@@ -102,7 +103,7 @@ XxxPage.vue (orchestration)
 - route name：`ROUTE_NAMES.XXX`。
 
 ## 既有模組
-`dashboard`（功能入口）、`auth`（登入）、`activity`（活動）、`activityProduct`（活動商品）、`animateType`（作品/動漫種類）、`inventory`（庫存）、`order`（訂單）、`report`（報表分析）。
+`dashboard`（功能入口）、`auth`（登入）、`activity`（活動）、`activityProduct`（活動商品）、`animateType`（作品/動漫種類）、`inventory`（庫存）、`order`（訂單）、`report`（報表分析）、`wishPool`（許願池）。
 
 ## 功能備註：運費模式 / 補運費 / 訂單總額
 
