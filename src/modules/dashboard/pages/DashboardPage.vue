@@ -37,6 +37,9 @@ const iconPaths = {
     'M22 21v-2a4 4 0 0 0-3-3.87',
     'M16 3.13a4 4 0 0 1 0 7.75',
   ],
+  star: [
+    'M12 3l2.2 6.4H21l-5.4 3.9 2.1 6.4L12 16.2 6.3 19.7l2.1-6.4L3 9.4h6.8L12 3Z',
+  ],
   art: [
     'M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z',
     'M3 16l5-4 4 3 3-2 6 5',
@@ -74,6 +77,12 @@ const modules = [
     icon: 'users',
     accent: '#5c3820',
     path: '/customers',
+  },
+  {
+    title: '許願池管理',
+    icon: 'star',
+    accent: '#2f6f8f',
+    path: '/wish-pools',
   },
   {
     title: '報表分析',
