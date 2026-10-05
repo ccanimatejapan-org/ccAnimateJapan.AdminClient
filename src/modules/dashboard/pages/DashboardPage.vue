@@ -31,6 +31,12 @@ const iconPaths = {
     'M19 19v-8',
     'M3 19h18',
   ],
+  users: [
+    'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2',
+    'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z',
+    'M22 21v-2a4 4 0 0 0-3-3.87',
+    'M16 3.13a4 4 0 0 1 0 7.75',
+  ],
   star: [
     'M12 3l2.2 6.4H21l-5.4 3.9 2.1 6.4L12 16.2 6.3 19.7l2.1-6.4L3 9.4h6.8L12 3Z',
   ],
@@ -49,7 +55,7 @@ const modules = [
     path: '/activities',
   },
   {
-    title: '作品管理',
+    title: '系統代碼管理',
     icon: 'art',
     accent: '#7a5bb0',
     path: '/animate-types',
@@ -65,6 +71,12 @@ const modules = [
     icon: 'receipt',
     accent: '#c48445',
     path: '/orders',
+  },
+  {
+    title: '顧客管理',
+    icon: 'users',
+    accent: '#5c3820',
+    path: '/customers',
   },
   {
     title: '許願池管理',

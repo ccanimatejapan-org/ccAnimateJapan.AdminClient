@@ -63,12 +63,12 @@ defineEmits(['close', 'confirm'])
   width: min(100%, 460px);
   overflow: hidden;
   gap: 20px;
-  border: 1px solid #eaded2;
+  border: 1px solid #d8e6de;
   border-radius: 18px;
   background:
-    linear-gradient(135deg, rgb(255 255 255 / 96%), rgb(255 250 244 / 98%)),
+    linear-gradient(135deg, rgb(255 255 255 / 96%), rgb(243 249 246 / 98%)),
     #ffffff;
-  box-shadow: 0 26px 76px rgb(114 74 56 / 22%);
+  box-shadow: 0 26px 76px rgb(39 120 103 / 18%);
   padding: 28px;
 }
 
@@ -77,7 +77,7 @@ defineEmits(['close', 'confirm'])
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
-  border-bottom: 1px solid #f0e5dc;
+  border-bottom: 1px solid #e3eee8;
   padding-bottom: 16px;
 }
 
@@ -90,7 +90,7 @@ defineEmits(['close', 'confirm'])
 
 .delete-dialog-copy {
   margin: 0;
-  background: #fffdf9;
+  background: #f8fcfa;
   color: #3d3832;
   line-height: 1.65;
   padding: 14px 16px;
@@ -112,6 +112,73 @@ defineEmits(['close', 'confirm'])
   border-color: #b9c2ca;
   background: #e2e7ea;
   color: #374151;
+}
+
+
+:deep(.form-field input),
+:deep(.form-field select),
+:deep(.form-field textarea) {
+  border-color: #d8e6de;
+  background: #f8fcfa;
+}
+
+:deep(.form-field input:focus),
+:deep(.form-field select:focus),
+:deep(.form-field textarea:focus) {
+  border-color: #277867;
+  box-shadow: 0 0 0 3px rgb(39 120 103 / 15%);
+}
+
+:deep(.icon-button) {
+  border-color: #d8e6de;
+  background: #f8fcfa;
+  color: #1f6154;
+}
+
+:deep(.icon-button:hover:not(:disabled)) {
+  border-color: #277867;
+  color: #1f6154;
+}
+
+:deep(.app-button--primary) {
+  background: #277867;
+}
+
+:deep(.app-button--primary:hover:not(:disabled)) {
+  background: #1f6154;
+}
+
+:deep(.app-button--pill.app-button--ghost) {
+  border-color: #d8e6de;
+  background: #f8fcfa;
+  color: #1f6154;
+}
+
+:deep(.app-button--pill.app-button--ghost:hover:not(:disabled)) {
+  border-color: #277867;
+  background: #f0faf4;
+  color: #1f6154;
+}
+
+:deep(.rich-html-editor) {
+  border-color: #d8e6de;
+  background: #f8fcfa;
+}
+
+:deep(.rich-html-toolbar) {
+  border-bottom-color: #e3eee8;
+  background: #f4fbf7;
+}
+
+:deep(.rich-html-toolbar button) {
+  border-color: #d8e6de;
+  background: #ffffff;
+  color: #1f6154;
+}
+
+:deep(.rich-html-toolbar button:hover) {
+  border-color: #277867;
+  color: #1f6154;
 }
 
 @media (max-width: 560px) {

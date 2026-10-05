@@ -87,6 +87,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  tone: {
+    type: String,
+    default: 'product',
+  },
 })
 
 const hasActionsColumn = computed(() => props.columns.some((column) => column.key === 'actions'))
@@ -105,7 +109,7 @@ const getProductTypeName = (productTypeId) => {
 </script>
 
 <template>
-  <div class="product-table-wrap">
+  <div class="product-table-wrap" :class="`product-table-wrap--${tone}`">
     <table class="product-table">
       <thead>
         <tr>
@@ -258,12 +262,32 @@ const getProductTypeName = (productTypeId) => {
 </template>
 
 <style scoped>
+
+.product-table-wrap {
+  --pt-accent: #277867;
+  --pt-accent-hover: #1f6154;
+  --pt-accent-text: #1f6154;
+  --pt-accent-soft: #f0faf4;
+  --pt-accent-softer: #f8fcfa;
+  --pt-accent-border: #bfd8cb;
+  --pt-accent-shadow: 39 120 103;
+}
+
+.product-table-wrap--inventory {
+  --pt-accent: #277867;
+  --pt-accent-hover: #1f6154;
+  --pt-accent-text: #22614c;
+  --pt-accent-soft: #f0faf4;
+  --pt-accent-softer: #f2faf5;
+  --pt-accent-border: #bfd8cb;
+  --pt-accent-shadow: 39 120 103;
+}
 .product-table-wrap {
   position: relative;
   z-index: 1;
   width: 100%;
   overflow-x: auto;
-  border: 1px solid #eaded2;
+  border: 1px solid #d8e6de;
   border-radius: 14px;
   background: #ffffff;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 80%);
@@ -274,12 +298,12 @@ const getProductTypeName = (productTypeId) => {
   min-width: 1280px;
   border-collapse: separate;
   border-spacing: 0;
-  background: #fffdf9;
+  background: #f8fcfa;
 }
 
 .product-table th,
 .product-table td {
-  border-bottom: 1px solid #f0e7df;
+  border-bottom: 1px solid #e3eee8;
   color: #384942;
   font-size: 0.92rem;
   line-height: 1.5;
@@ -294,8 +318,8 @@ const getProductTypeName = (productTypeId) => {
   top: 0;
   z-index: 1;
   background:
-    linear-gradient(135deg, rgb(247 252 249 / 98%), rgb(240 249 244 / 98%)),
-    #f4fbf7;
+    linear-gradient(135deg, color-mix(in srgb, var(--pt-accent-soft) 88%, #ffffff), var(--pt-accent-soft)),
+    var(--pt-accent-softer);
   color: #4e443d;
   font-size: 0.84rem;
   font-weight: 900;
@@ -312,7 +336,7 @@ const getProductTypeName = (productTypeId) => {
 }
 
 .product-table tbody tr:hover td {
-  background: #fffaf4;
+  background: #f4fbf7;
 }
 
 .product-table tbody tr:last-child td {
@@ -338,20 +362,24 @@ const getProductTypeName = (productTypeId) => {
 
 .table-sort-button:hover,
 .table-sort-button.is-active {
-  color: #1f6154;
+  color: var(--pt-accent-hover);
+}
+
+.table-sort-button.is-active {
+  font-weight: 900;
 }
 
 .table-sort-icon {
   display: inline-grid;
   width: 16px;
   place-items: center;
-  color: #9f6a45;
+  color: #5e786f;
   font-size: 0.78rem;
   line-height: 1;
 }
 
 .table-sort-button.is-active .table-sort-icon {
-  color: #1f6154;
+  color: var(--pt-accent-hover);
 }
 
 .product-name {
@@ -382,10 +410,10 @@ const getProductTypeName = (productTypeId) => {
   height: 70px;
   margin: 0 auto;
   overflow: hidden;
-  border: 1px solid #eaded2;
+  border: 1px solid #d8e6de;
   border-radius: 10px;
   background: #e8eee9;
-  box-shadow: 0 10px 24px rgb(114 74 56 / 10%);
+  box-shadow: 0 10px 24px rgb(39 120 103 / 10%);
 }
 
 .product-thumb img {
@@ -403,8 +431,8 @@ const getProductTypeName = (productTypeId) => {
   justify-content: center;
   border: 1px solid #d9e5de;
   border-radius: 999px;
-  background: #f2faf5;
-  color: #1f6154;
+  background: var(--pt-accent-softer);
+  color: var(--pt-accent-hover);
   font-size: 0.8rem;
   font-weight: 900;
 }
@@ -421,31 +449,31 @@ const getProductTypeName = (productTypeId) => {
   min-height: 30px;
   align-items: center;
   justify-content: center;
-  border: 1px solid #bfd8cb;
+  border: 1px solid var(--pt-accent-border);
   border-radius: 999px;
-  background: #f0faf4;
-  color: #22614c;
+  background: var(--pt-accent-soft);
+  color: var(--pt-accent-text);
   font-size: 0.84rem;
   font-weight: 850;
   padding: 4px 10px;
 }
 
 .product-stock-badge {
-  border-color: #bfd8cb;
-  background: #f0faf4;
-  color: #22614c;
+  border-color: var(--pt-accent-border);
+  background: var(--pt-accent-soft);
+  color: var(--pt-accent-text);
 }
 
 .product-activity-kind-badge {
-  border-color: #bfd8cb;
-  background: #f0faf4;
-  color: #22614c;
+  border-color: var(--pt-accent-border);
+  background: var(--pt-accent-soft);
+  color: var(--pt-accent-text);
 }
 
 .product-activity-kind-badge.is-preorder {
-  border-color: #9bc6b1;
-  background: #e7f5ec;
-  color: #1f6154;
+  border-color: color-mix(in srgb, var(--pt-accent) 42%, #ffffff);
+  background: color-mix(in srgb, var(--pt-accent) 12%, #ffffff);
+  color: var(--pt-accent-hover);
 }
 
 .product-stock-badge.is-out {
@@ -460,9 +488,9 @@ const getProductTypeName = (productTypeId) => {
   height: 64px;
   place-items: center;
   overflow: hidden;
-  border: 1px solid #eaded2;
+  border: 1px solid #d8e6de;
   border-radius: 12px;
-  background: #fffdf9;
+  background: #f8fcfa;
   color: #384942;
   cursor: pointer;
   font-size: 0.86rem;
@@ -506,9 +534,9 @@ const getProductTypeName = (productTypeId) => {
 }
 
 .product-note-preview:hover:not(.is-empty) {
-  border-color: #277867;
-  background: #f0faf4;
-  color: #1f6154;
+  border-color: var(--pt-accent);
+  background: var(--pt-accent-soft);
+  color: var(--pt-accent-hover);
 }
 
 .product-note-preview.is-empty {
@@ -530,10 +558,10 @@ const getProductTypeName = (productTypeId) => {
 
 .table-action-button {
   min-height: 34px;
-  border: 1px solid #e8d8c8;
+  border: 1px solid #d8e6de;
   border-radius: 999px;
-  background: #fffdf9;
-  color: #1f6154;
+  background: #f8fcfa;
+  color: var(--pt-accent-hover);
   font-size: 0.86rem;
   font-weight: 850;
   padding: 0 12px;
@@ -541,8 +569,8 @@ const getProductTypeName = (productTypeId) => {
 }
 
 .table-action-button:hover {
-  border-color: #277867;
-  box-shadow: 0 8px 18px rgb(39 120 103 / 10%);
+  border-color: var(--pt-accent);
+  box-shadow: 0 8px 18px rgb(var(--pt-accent-shadow) / 10%);
 }
 
 .table-action-button:disabled {
@@ -551,64 +579,64 @@ const getProductTypeName = (productTypeId) => {
 }
 
 .table-action-button--edit {
-  border-color: #277867;
-  background: #277867;
+  border-color: var(--pt-accent);
+  background: var(--pt-accent);
   color: #ffffff;
 }
 
 .table-action-button--edit:hover {
-  border-color: #1f6154;
-  background: #1f6154;
-  box-shadow: 0 8px 18px rgb(39 120 103 / 16%);
+  border-color: var(--pt-accent-hover);
+  background: var(--pt-accent-hover);
+  box-shadow: 0 8px 18px rgb(var(--pt-accent-shadow) / 16%);
   color: #ffffff;
 }
 
 .table-action-button--copy {
-  border-color: #d8e6de;
-  background: #f2faf5;
-  color: #1f6154;
+  border-color: var(--pt-accent-border);
+  background: var(--pt-accent-softer);
+  color: var(--pt-accent-hover);
 }
 
 .table-action-button--copy:hover {
-  border-color: #277867;
-  background: #e7f5ec;
-  color: #1f6154;
+  border-color: var(--pt-accent);
+  background: color-mix(in srgb, var(--pt-accent) 12%, #ffffff);
+  color: var(--pt-accent-hover);
 }
 
 .table-action-button--stock-in {
-  border-color: #277867;
-  background: #277867;
+  border-color: var(--pt-accent);
+  background: var(--pt-accent);
   color: #ffffff;
 }
 
 .table-action-button--stock-out {
-  border-color: #c48445;
-  background: #fff7ee;
-  color: #9a5b12;
-}
-
-.table-action-button--stock-history {
-  border-color: #d8e6de;
-  background: #f2faf5;
+  border-color: #277867;
+  background: #e7f5ec;
   color: #1f6154;
 }
 
+.table-action-button--stock-history {
+  border-color: var(--pt-accent-border);
+  background: var(--pt-accent-softer);
+  color: var(--pt-accent-hover);
+}
+
 .table-action-button--stock-in:hover {
-  border-color: #1f6154;
-  background: #1f6154;
+  border-color: var(--pt-accent-hover);
+  background: var(--pt-accent-hover);
   color: #ffffff;
 }
 
 .table-action-button--stock-out:hover {
-  border-color: #c48445;
-  background: #fff1df;
-  color: #824b0d;
+  border-color: #1f6154;
+  background: #d8eee3;
+  color: #1f6154;
 }
 
 .table-action-button--stock-history:hover {
-  border-color: #277867;
-  background: #e7f5ec;
-  color: #1f6154;
+  border-color: var(--pt-accent);
+  background: color-mix(in srgb, var(--pt-accent) 12%, #ffffff);
+  color: var(--pt-accent-hover);
 }
 
 .icon-action-button {

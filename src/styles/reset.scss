@@ -45,3 +45,33 @@ button {
 button:disabled {
   cursor: wait;
 }
+
+
+button.table-sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-weight: inherit;
+  padding: 0;
+  white-space: nowrap;
+}
+
+button.table-sort-button.is-num {
+  width: 100%;
+  justify-content: flex-end;
+}
+
+button.table-sort-button.is-active {
+  color: #111111 !important;
+  font-weight: 900 !important;
+}
+
+button.table-sort-button.is-active .table-sort-icon,
+button.table-sort-button.is-active .sort-indicator {
+  color: #111111 !important;
+}

@@ -50,13 +50,18 @@ defineEmits(['change'])
   display: grid;
   min-height: 150px;
   place-items: center;
-  border: 1px dashed #eaded2;
+  border: 1px dashed #c5b8d4;
   border-radius: 14px;
-  background: #fffdf9;
-  color: #384942;
+  background: #f7f4fa;
+  color: #3d2463;
   font-weight: 750;
   padding: 14px;
   text-align: center;
+}
+
+.file-drop:hover {
+  border-color: #5b21b6;
+  background: #eee8f4;
 }
 
 .file-drop input {
@@ -72,10 +77,10 @@ defineEmits(['change'])
   min-height: 150px;
   place-items: center;
   overflow: hidden;
-  border: 1px solid #eaded2;
+  border: 1px solid #c9bdd6;
   border-radius: 14px;
-  background: #fffdf9;
-  color: #59665f;
+  background: #f7f4fa;
+  color: #5c4e6e;
   font-size: 0.9rem;
   font-weight: 750;
 }
@@ -93,8 +98,8 @@ defineEmits(['change'])
 }
 
 .image-link:hover {
-  border-color: #b84d55;
-  box-shadow: 0 12px 28px rgb(184 77 85 / 12%);
+  border-color: #5b21b6;
+  box-shadow: 0 12px 28px rgb(76 29 149 / 14%);
 }
 
 @media (max-width: 560px) {

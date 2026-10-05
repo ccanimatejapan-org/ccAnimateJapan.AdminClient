@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue'
+import { useTableSort } from '@/shared/composables/useTableSort'
 import PanelCard from '@/shared/components/PanelCard.vue'
 import MessageBlock from '@/shared/components/MessageBlock.vue'
 import { formatCurrency, formatNumber, formatPercent } from '@/shared/utils/format'
@@ -23,6 +24,22 @@ const formatStatValue = (stat) =>
   stat.type === 'percent'
     ? formatRate(stat.value, report.value.totals.operatingRevenue)
     : formatCurrency(stat.value)
+
+const columns = [
+  { key: 'name', label: '商品', sortable: true, getValue: (item) => item.name || ('#' + item.productId) },
+  { key: 'activityName', label: '活動', sortable: true, getValue: (item) => item.activityName || '' },
+  { key: 'qtySold', label: '數量', sortable: true, align: 'num', getValue: (item) => Number(item.qtySold || 0) },
+  { key: 'operatingRevenue', label: '營業額', sortable: true, align: 'num', getValue: (item) => Number(item.operatingRevenue || 0) },
+  { key: 'productRevenue', label: '商品營收', sortable: true, align: 'num', getValue: (item) => Number(item.productRevenue || 0) },
+  { key: 'paidShippingRevenue', label: '已收補運費', sortable: true, align: 'num', getValue: (item) => Number(item.paidShippingRevenue || 0) },
+  { key: 'productCost', label: '商品成本', sortable: true, align: 'num', getValue: (item) => Number(item.productCost || 0) },
+  { key: 'activityShippingCost', label: '分攤活動運費', sortable: true, align: 'num', getValue: (item) => Number(item.activityShippingCost || 0) },
+  { key: 'totalCost', label: '總成本', sortable: true, align: 'num', getValue: (item) => Number(item.totalCost || 0) },
+  { key: 'netProfit', label: '淨利', sortable: true, align: 'num', getValue: (item) => Number(item.netProfit || 0) },
+  { key: 'netProfitRate', label: '淨利率', sortable: true, align: 'num', getValue: (item) => Number(item.netProfitRate || 0) },
+]
+const { sortedItems, isSortActive, toggleSort, getSortAriaSort, getSortButtonLabel, getSortIndicator } = useTableSort(computed(() => report.value.items), columns)
+
 </script>
 
 <template>
@@ -85,22 +102,28 @@ const formatStatValue = (stat) =>
         <h3 class="block-title">商品損益明細（依淨利排序，最多 10 筆）</h3>
         <table>
           <thead>
-            <tr>
-              <th>商品</th>
-              <th>活動</th>
-              <th class="num">數量</th>
-              <th class="num">營業額</th>
-              <th class="num">商品營收</th>
-              <th class="num">已收補運費</th>
-              <th class="num">商品成本</th>
-              <th class="num">分攤活動運費</th>
-              <th class="num">總成本</th>
-              <th class="num">淨利</th>
-              <th class="num">淨利率</th>
+<tr>
+              <th
+                v-for="column in columns"
+                :key="column.key"
+                :class="column.align"
+                :aria-sort="getSortAriaSort(column)"
+              >
+                <button
+                  class="table-sort-button"
+                  type="button"
+                  :class="{ 'is-active': isSortActive(column), 'is-num': column.align === 'num' }"
+                  :aria-label="getSortButtonLabel(column)"
+                  @click="toggleSort(column)"
+                >
+                  <span>{{ column.label }}</span>
+                  <span class="table-sort-icon" aria-hidden="true">{{ getSortIndicator(column) }}</span>
+                </button>
+              </th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in report.items" :key="item.productId">
+            <tr v-for="item in sortedItems" :key="item.productId">
               <td>{{ item.name || `#${item.productId}` }}</td>
               <td>{{ item.activityName || '—' }}</td>
               <td class="num">{{ formatNumber(item.qtySold) }}</td>

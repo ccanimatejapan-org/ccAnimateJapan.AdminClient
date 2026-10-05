@@ -10,6 +10,7 @@ import inventoryRoutes from '@/modules/inventory/routes'
 import animateTypeRoutes from '@/modules/animateType/routes'
 import reportRoutes from '@/modules/report/routes'
 import wishPoolRoutes from '@/modules/wishPool/routes'
+import customerRoutes from '@/modules/customer/routes'
 
 const normalizeActivityPath = (path) => path.replace(/^\/activity(?=\/|$)/, '/activities')
 
@@ -49,6 +50,7 @@ const routes = [
       ...orderRoutes,
       ...reportRoutes,
       ...wishPoolRoutes,
+      ...customerRoutes,
     ],
   },
   ...authRoutes,

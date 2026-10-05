@@ -96,6 +96,7 @@ defineEmits([
       class="inventory-activity-group__panel"
     >
       <ProductTable
+        tone="inventory"
         :products="group.products"
         :columns="columns"
         :product-types="productTypes"
@@ -125,7 +126,7 @@ defineEmits([
   overflow: hidden;
   border: 1px solid #d8e6de;
   border-radius: 16px;
-  background: #fffdf9;
+  background: #f8fcfa;
   box-shadow: 0 12px 28px rgb(39 120 103 / 8%);
 }
 

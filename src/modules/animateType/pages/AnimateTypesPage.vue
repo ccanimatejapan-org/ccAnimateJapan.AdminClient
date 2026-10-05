@@ -1,7 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import PageShell from '@/shared/components/PageShell.vue'
-import PageHeading from '@/shared/components/PageHeading.vue'
 import PanelCard from '@/shared/components/PanelCard.vue'
 import FormField from '@/shared/components/FormField.vue'
 import AppButton from '@/shared/components/AppButton.vue'
@@ -9,6 +8,12 @@ import MessageBlock from '@/shared/components/MessageBlock.vue'
 import AnimateTypeImagePicker from '@/modules/animateType/components/AnimateTypeImagePicker.vue'
 import { useImageUpload } from '@/shared/composables/useImageUpload'
 import { listAnimateTypes, createAnimateType, updateAnimateType } from '@/modules/animateType/api/animateTypeApi'
+
+const animateTypeIconPaths = [
+  'M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z',
+  'M3 16l5-4 4 3 3-2 6 5',
+  'M9 10a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z',
+]
 
 const animateTypes = ref([])
 const form = ref({ id: null, name: '', imageUrl: '' })
@@ -94,20 +99,37 @@ onMounted(loadAnimateTypes)
 </script>
 
 <template>
-  <PageShell>
-    <PageHeading
-      eyebrow="設定"
-      title="作品管理"
-      copy="管理動漫作品（animateType）與其圖片，圖片會顯示在前台「依作品逛」的圓形頭像。"
-    />
+  <PageShell class="animate-types-page">
+    <section class="animate-types-hero">
+      <div class="animate-types-hero__title">
+        <span class="animate-types-hero__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path v-for="path in animateTypeIconPaths" :key="path" :d="path" />
+          </svg>
+        </span>
+        <h1>系統代碼管理</h1>
+      </div>
+    </section>
 
     <MessageBlock v-if="errorMessage" tone="error">{{ errorMessage }}</MessageBlock>
     <MessageBlock v-if="successMessage" tone="success">{{ successMessage }}</MessageBlock>
 
-    <PanelCard>
-      <form class="animate-type-form" @submit.prevent="submit">
-        <h2 class="animate-type-form__title">{{ isEditing ? '編輯作品' : '新增作品' }}</h2>
+    <PanelCard accent>
+      <div class="animate-type-panel-heading">
+        <div class="animate-type-title-row">
+          <span class="management-title-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path v-for="path in animateTypeIconPaths" :key="path" :d="path" />
+            </svg>
+          </span>
+          <div class="animate-type-title-copy">
+            <h2>{{ isEditing ? '編輯作品' : '新增作品' }}</h2>
+            <p>管理動漫作品與其圖片，圖片會顯示在前台「依作品逛」的圓形頭像。</p>
+          </div>
+        </div>
+      </div>
 
+      <form class="animate-type-form" @submit.prevent="submit">
         <FormField label="作品名稱">
           <input v-model="form.name" type="text" maxlength="100" placeholder="例如：間諜家家酒" />
         </FormField>
@@ -137,8 +159,21 @@ onMounted(loadAnimateTypes)
       </form>
     </PanelCard>
 
-    <PanelCard>
-      <h2 class="animate-type-list__title">作品列表</h2>
+    <PanelCard accent>
+      <div class="animate-type-panel-heading">
+        <div class="animate-type-title-row">
+          <span class="management-title-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path v-for="path in animateTypeIconPaths" :key="path" :d="path" />
+            </svg>
+          </span>
+          <div class="animate-type-title-copy">
+            <h2>作品列表</h2>
+          </div>
+          <span class="total-pill">{{ animateTypes.length }} 筆</span>
+        </div>
+      </div>
+
       <p v-if="!animateTypes.length" class="animate-type-list__empty">目前沒有作品。</p>
       <ul v-else class="animate-type-list">
         <li v-for="item in animateTypes" :key="item.id" class="animate-type-list__row">

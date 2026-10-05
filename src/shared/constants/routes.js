@@ -11,4 +11,5 @@ export const ROUTE_NAMES = {
   ORDERS: 'Orders',
   REPORTS: 'Reports',
   WISH_POOLS: 'WishPools',
+  CUSTOMERS: 'Customers',
 }
