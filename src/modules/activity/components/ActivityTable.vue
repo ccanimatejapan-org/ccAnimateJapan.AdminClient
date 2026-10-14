@@ -290,12 +290,14 @@ const getGroupBuyBadgeClass = (status) => {
   position: sticky;
   top: 0;
   z-index: 1;
-  background:
-    linear-gradient(135deg, rgb(255 250 244 / 98%), rgb(255 245 236 / 98%)),
-    #fff8f0;
-  color: #4e443d;
+  background: linear-gradient(135deg, #fff4f4, #f6dfe2);
+  color: #8f3f47;
   font-size: 0.84rem;
   font-weight: 900;
+}
+
+.activity-table th:nth-child(even) {
+  background: linear-gradient(135deg, #f6dfe2, #efcfd4);
 }
 
 .activity-table th:first-child,

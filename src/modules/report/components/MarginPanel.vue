@@ -38,7 +38,14 @@ const columns = [
   { key: 'netProfit', label: '淨利', sortable: true, align: 'num', getValue: (item) => Number(item.netProfit || 0) },
   { key: 'netProfitRate', label: '淨利率', sortable: true, align: 'num', getValue: (item) => Number(item.netProfitRate || 0) },
 ]
-const { sortedItems, isSortActive, toggleSort, getSortAriaSort, getSortButtonLabel, getSortIndicator } = useTableSort(computed(() => report.value.items), columns)
+const {
+  sortedItems,
+  isSortActive,
+  toggleSort,
+  getSortAriaSort,
+  getSortButtonLabel,
+  getSortIndicator,
+} = useTableSort(computed(() => report.value.items), columns)
 
 </script>
 
@@ -102,7 +109,7 @@ const { sortedItems, isSortActive, toggleSort, getSortAriaSort, getSortButtonLab
         <h3 class="block-title">商品損益明細（依淨利排序，最多 10 筆）</h3>
         <table>
           <thead>
-<tr>
+            <tr>
               <th
                 v-for="column in columns"
                 :key="column.key"
@@ -288,9 +295,57 @@ td {
 }
 
 th {
-  color: #6a7488;
-  font-weight: 700;
+  background: linear-gradient(135deg, #eef2fb, #dde5f4);
+  color: #3d4c73;
+  font-size: 0.84rem;
+  font-weight: 900;
 }
+
+th:nth-child(even) {
+  background: linear-gradient(135deg, #dde5f4, #ced8ec);
+}
+.table-sort-button {
+  display: inline-flex;
+  width: 100%;
+  min-height: 28px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-weight: inherit;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.table-sort-button.is-num {
+  justify-content: flex-end;
+}
+
+.table-sort-button:hover,
+.table-sort-button.is-active {
+  color: #111111;
+}
+
+.table-sort-button.is-active {
+  font-weight: 900;
+}
+
+.table-sort-icon {
+  display: inline-grid;
+  width: 16px;
+  place-items: center;
+  font-size: 0.78rem;
+  line-height: 1;
+}
+
+.table-sort-button.is-active .table-sort-icon {
+  color: #111111;
+}
+
 
 td {
   color: #2c3346;

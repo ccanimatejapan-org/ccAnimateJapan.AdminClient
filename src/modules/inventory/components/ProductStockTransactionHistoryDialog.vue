@@ -42,7 +42,14 @@ const columns = [
   { key: 'unitPrice', label: '單位售價', sortable: true, getValue: (row) => Number(row.unitPrice || 0) },
   { key: 'admin', label: '管理員', sortable: true, getValue: (row) => Number(row.createAdminId || 0) },
 ]
-const { sortedItems, isSortActive, toggleSort, getSortAriaSort, getSortButtonLabel, getSortIndicator } = useTableSort(computed(() => props.transactions), columns, { key: 'createdAt', direction: 'desc' })
+const {
+  sortedItems,
+  isSortActive,
+  toggleSort,
+  getSortAriaSort,
+  getSortButtonLabel,
+  getSortIndicator,
+} = useTableSort(computed(() => props.transactions), columns, { key: 'createdAt', direction: 'desc' })
 
 </script>
 
@@ -175,9 +182,17 @@ const { sortedItems, isSortActive, toggleSort, getSortAriaSort, getSortButtonLab
 }
 
 .history-table th {
-  background: #f4fbf7;
-  color: #4e443d;
-  font-weight: 850;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: linear-gradient(135deg, #f0faf4, #dceee4);
+  color: #1f6154;
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.history-table th:nth-child(even) {
+  background: linear-gradient(135deg, #dceee4, #cce4d8);
 }
 
 .type-badge {
@@ -191,9 +206,9 @@ const { sortedItems, isSortActive, toggleSort, getSortAriaSort, getSortButtonLab
 }
 
 .type-badge.is-out {
-  border-color: #9fc4b6;
-  background: #e7f5ec;
-  color: #1f6154;
+  border-color: #f3c98b;
+  background: #fff7ee;
+  color: #9a5b12;
 }
 
 .dialog-actions {
@@ -201,70 +216,41 @@ const { sortedItems, isSortActive, toggleSort, getSortAriaSort, getSortButtonLab
   justify-content: flex-end;
 }
 
-:deep(.form-field input),
-:deep(.form-field select),
-:deep(.form-field textarea) {
-  border-color: #d8e6de;
-  background: #f8fcfa;
+.table-sort-button {
+  display: inline-flex;
+  width: 100%;
+  min-height: 28px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-weight: inherit;
+  padding: 0;
+  white-space: nowrap;
 }
-
-:deep(.form-field input:focus),
-:deep(.form-field select:focus),
-:deep(.form-field textarea:focus) {
-  border-color: #277867;
-  box-shadow: 0 0 0 3px rgb(39 120 103 / 15%);
+.table-sort-button.is-num {
+  justify-content: flex-end;
 }
-
-:deep(.icon-button) {
-  border-color: #d8e6de;
-  background: #f8fcfa;
-  color: #1f6154;
+.table-sort-button:hover,
+.table-sort-button.is-active {
+  color: #111111;
 }
-
-:deep(.icon-button:hover:not(:disabled)) {
-  border-color: #277867;
-  color: #1f6154;
+.table-sort-button.is-active {
+  font-weight: 900;
 }
-
-:deep(.app-button--primary) {
-  background: #277867;
+.table-sort-icon {
+  display: inline-grid;
+  width: 16px;
+  place-items: center;
+  font-size: 0.78rem;
+  line-height: 1;
 }
-
-:deep(.app-button--primary:hover:not(:disabled)) {
-  background: #1f6154;
-}
-
-:deep(.app-button--pill.app-button--ghost) {
-  border-color: #d8e6de;
-  background: #f8fcfa;
-  color: #1f6154;
-}
-
-:deep(.app-button--pill.app-button--ghost:hover:not(:disabled)) {
-  border-color: #277867;
-  background: #f0faf4;
-  color: #1f6154;
-}
-
-:deep(.rich-html-editor) {
-  border-color: #d8e6de;
-  background: #f8fcfa;
-}
-
-:deep(.rich-html-toolbar) {
-  border-bottom-color: #e3eee8;
-  background: #f4fbf7;
-}
-
-:deep(.rich-html-toolbar button) {
-  border-color: #d8e6de;
-  background: #ffffff;
-  color: #1f6154;
-}
-
-:deep(.rich-html-toolbar button:hover) {
-  border-color: #277867;
-  color: #1f6154;
+.table-sort-button.is-active .table-sort-icon {
+  color: #111111;
 }
 
 </style>

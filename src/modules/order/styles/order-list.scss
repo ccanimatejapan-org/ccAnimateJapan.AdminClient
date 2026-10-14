@@ -589,10 +589,17 @@ td {
 }
 
 th {
-  background: #fff7ed;
-  color: #59665f;
-  font-size: 0.78rem;
-  font-weight: 850;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: linear-gradient(135deg, #fff7eb, #f6e4cc);
+  color: #824b0d;
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+th:nth-child(even) {
+  background: linear-gradient(135deg, #f6e4cc, #edd4b0);
 }
 
 .table-sort-button {
