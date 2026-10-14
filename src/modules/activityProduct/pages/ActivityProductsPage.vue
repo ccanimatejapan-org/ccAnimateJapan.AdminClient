@@ -14,6 +14,7 @@ import ActivityNoteDialog from '@/shared/components/ActivityNoteDialog.vue'
 import CustomSelect from '@/shared/components/CustomSelect.vue'
 import ProductFormDialog from '@/modules/activityProduct/components/ProductFormDialog.vue'
 import ProductDeleteConfirmDialog from '@/modules/activityProduct/components/ProductDeleteConfirmDialog.vue'
+import ProductImportDialog from '@/modules/activityProduct/components/ProductImportDialog.vue'
 import ProductTable from '@/shared/components/ProductTable.vue'
 import AppButton from '@/shared/components/AppButton.vue'
 import IconButton from '@/shared/components/IconButton.vue'
@@ -53,6 +54,12 @@ const productTitleIconPaths = [
   'M12 3 21 8l-9 5-9-5 9-5Z',
   'M3 8v8l9 5 9-5V8',
   'M12 13v8',
+]
+const importIconPaths = [
+  'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z',
+  'M14 3v5h5',
+  'M12 18v-6',
+  'm9 15 3-3 3 3',
 ]
 const downloadIconPaths = [
   'M12 3v11',
@@ -148,7 +155,23 @@ const {
   closeNoteDialog,
 } = useNoteDialog({ getNoteTitle: (item) => item?.name || '商品備註' })
 
-const isAnyDialogOpen = computed(() => isDialogOpen.value || isNoteDialogOpen.value || isDeleteConfirmDialogOpen.value)
+const isImportDialogOpen = ref(false)
+
+const openImportDialog = () => {
+  statusMessage.value = ''
+  errorMessage.value = ''
+  isImportDialogOpen.value = true
+}
+
+// 匯入成功時視窗仍停在結果頁，先在背景重新載入列表；使用者按「完成」才關閉。
+const handleProductsImported = async (result) => {
+  statusMessage.value = `已批次匯入 ${result.createdCount} 個商品、${result.imageCount} 張圖片。`
+  await loadProducts()
+}
+
+const isAnyDialogOpen = computed(
+  () => isDialogOpen.value || isNoteDialogOpen.value || isDeleteConfirmDialogOpen.value || isImportDialogOpen.value,
+)
 useDialogScrollLock(isAnyDialogOpen)
 
 const formatCurrency = (value, prefix) => `${prefix} ${toNumber(value).toLocaleString()}`
@@ -383,6 +406,7 @@ watch(activityId, async () => {
   productTypeErrorMessage.value = ''
   clearSearchFilters()
   closeDialog()
+  isImportDialogOpen.value = false
   await loadPage()
 })
 
@@ -463,6 +487,22 @@ watch(
             <svg class="table-button-svg" viewBox="0 0 24 24" aria-hidden="true">
               <path
                 v-for="path in downloadIconPaths"
+                :key="path"
+                :d="path"
+              />
+            </svg>
+          </IconButton>
+          <IconButton
+            v-if="isPreOrderActivity"
+            class="product-toolbar-icon product-toolbar-icon--import"
+            variant="table"
+            aria-label="批次匯入商品"
+            title="批次匯入商品"
+            @click="openImportDialog"
+          >
+            <svg class="table-button-svg" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                v-for="path in importIconPaths"
                 :key="path"
                 :d="path"
               />
@@ -642,6 +682,15 @@ watch(
       @image-change="handleProductImageChange"
       @remove-existing-image="removeExistingProductImage"
       @remove-new-image="removeNewProductImage"
+    />
+
+    <ProductImportDialog
+      v-if="isImportDialogOpen"
+      :activity-id="activityId"
+      :activity-name="activityName"
+      :activity-rate-defaults="activityRateDefaults"
+      @close="isImportDialogOpen = false"
+      @imported="handleProductsImported"
     />
 
     <ProductDeleteConfirmDialog

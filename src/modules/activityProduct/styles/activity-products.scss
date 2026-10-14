@@ -220,6 +220,7 @@
 }
 
 .product-toolbar-icon.product-toolbar-icon--create,
+.product-toolbar-icon.product-toolbar-icon--import,
 .product-toolbar-icon.product-toolbar-icon--download {
   border-color: #277867;
   background: #277867;
@@ -227,6 +228,7 @@
 }
 
 .product-toolbar-icon.product-toolbar-icon--create:hover:not(:disabled),
+.product-toolbar-icon.product-toolbar-icon--import:hover:not(:disabled),
 .product-toolbar-icon.product-toolbar-icon--download:hover:not(:disabled) {
   border-color: #1f6154;
   background: #1f6154;
