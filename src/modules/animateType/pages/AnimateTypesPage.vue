@@ -7,6 +7,7 @@ import AppButton from '@/shared/components/AppButton.vue'
 import MessageBlock from '@/shared/components/MessageBlock.vue'
 import AnimateTypeImagePicker from '@/modules/animateType/components/AnimateTypeImagePicker.vue'
 import { useImageUpload } from '@/shared/composables/useImageUpload'
+import { ALLOWED_IMAGE_LABEL } from '@/shared/constants/imageTypes'
 import { listAnimateTypes, createAnimateType, updateAnimateType } from '@/modules/animateType/api/animateTypeApi'
 
 const animateTypeIconPaths = [
@@ -25,7 +26,7 @@ const isEditing = computed(() => form.value.id != null)
 
 const { selectedImageFile, imagePreview, resetImageUpload, onImageChange } = useImageUpload({
   existingImageUrl: () => form.value.imageUrl,
-  invalidTypeMessage: '作品圖片僅支援圖片檔。',
+  invalidTypeMessage: `作品圖片僅支援 ${ALLOWED_IMAGE_LABEL}。`,
   maxBytesMessage: '作品圖片不可超過 5MB。',
   onError: (message) => {
     errorMessage.value = message
@@ -134,7 +135,7 @@ onMounted(loadAnimateTypes)
           <input v-model="form.name" type="text" maxlength="100" placeholder="例如：間諜家家酒" />
         </FormField>
 
-        <FormField as="div" label="作品圖片（上傳最大 5MB，jpg / png / webp / gif）" full>
+        <FormField as="div" label="作品圖片（上傳最大 5MB，jpg / png / webp / avif）" full>
           <AnimateTypeImagePicker
             :selected-file-name="selectedImageFile?.name || ''"
             :preview="imagePreview"

@@ -137,7 +137,7 @@ export const useProductImport = ({ activityId, activityRateDefaults }) => {
     revokeThumbnails()
     imageFiles.value = merged
     const notices = []
-    if (skippedCount) notices.push(`已略過 ${skippedCount} 個不是 jpg、png、webp、gif 的檔案。`)
+    if (skippedCount) notices.push(`已略過 ${skippedCount} 個不是 jpg、png、webp、avif 的檔案。`)
     if (duplicateCount) notices.push(`有 ${duplicateCount} 張圖片與其他圖片同名，只保留最後一張，請確認檔名不重複。`)
     noticeMessage.value = notices.join('')
     return true

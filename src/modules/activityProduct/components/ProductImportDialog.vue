@@ -246,7 +246,7 @@ const confirmImport = async () => {
               </template>
               <template v-else>
                 <strong class="drop-zone-title">拖曳資料夾 <span class="tag tag--required">必填</span></strong>
-                <span class="drop-zone-sub">jpg、png、webp、gif，每張 5MB 以內</span>
+                <span class="drop-zone-sub">jpg、png、webp、avif，每張 5MB 以內</span>
               </template>
               <div class="drop-zone-actions">
                 <AppButton pill @click="pickImageFolder">{{ imageFiles.length ? '重新選擇' : '選擇資料夾' }}</AppButton>

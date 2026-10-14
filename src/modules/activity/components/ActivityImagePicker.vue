@@ -1,4 +1,6 @@
 <script setup>
+import { ALLOWED_IMAGE_ACCEPT } from '@/shared/constants/imageTypes'
+
 defineProps({
   selectedFileName: {
     type: String,
@@ -16,7 +18,7 @@ defineEmits(['change'])
 <template>
   <div class="activity-image-editor">
     <label class="file-drop">
-      <input type="file" accept="image/*" @change="$emit('change', $event)" />
+      <input type="file" :accept="ALLOWED_IMAGE_ACCEPT" @change="$emit('change', $event)" />
       <span>{{ selectedFileName || '選擇活動圖片' }}</span>
     </label>
     <a

@@ -6,6 +6,7 @@ import {
 } from '@/modules/activity/api/activityApi'
 import { useActivityRangePicker } from '@/modules/activity/composables/useActivityRangePicker'
 import { useImageUpload } from '@/shared/composables/useImageUpload'
+import { ALLOWED_IMAGE_LABEL } from '@/shared/constants/imageTypes'
 import {
   GroupBuyStatus,
   ShippingMode,
@@ -80,7 +81,7 @@ export const useActivityForm = ({
     onImageChange: onActivityImageChange,
   } = useImageUpload({
     existingImageUrl: () => form.imageUrl,
-    invalidTypeMessage: '活動圖片僅支援圖片檔。',
+    invalidTypeMessage: `活動圖片僅支援 ${ALLOWED_IMAGE_LABEL}。`,
     maxBytesMessage: '活動圖片不可超過 5MB。',
     onError: (message) => {
       errorMessage.value = message

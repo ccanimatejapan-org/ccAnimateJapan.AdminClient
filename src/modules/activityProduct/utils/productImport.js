@@ -1,8 +1,10 @@
 // 批次匯入商品的純函式：圖片清單整理、預覽結果整理、正式匯入的 payload 與要上傳的圖片。
 // 規則與後端 ProductImportImages / ProductImportRules 一致（檔名不分大小寫、每張 5MB、一次最多 500 張 / 200MB）。
 
-export const IMPORT_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif']
-export const IMPORT_IMAGE_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif'
+import { ALLOWED_IMAGE_ACCEPT, ALLOWED_IMAGE_EXTENSIONS } from '@/shared/constants/imageTypes'
+
+export const IMPORT_IMAGE_EXTENSIONS = ALLOWED_IMAGE_EXTENSIONS
+export const IMPORT_IMAGE_ACCEPT = ALLOWED_IMAGE_ACCEPT
 export const MAX_IMPORT_IMAGE_FILES = 500
 export const MAX_IMPORT_IMAGE_TOTAL_BYTES = 200 * 1024 * 1024
 export const MAX_IMPORT_EXCEL_BYTES = 5 * 1024 * 1024

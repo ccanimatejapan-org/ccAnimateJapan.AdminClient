@@ -1,4 +1,5 @@
 import { computed, ref, unref } from 'vue'
+import { ALLOWED_IMAGE_LABEL, ALLOWED_IMAGE_TYPES } from '@/shared/constants/imageTypes'
 
 const defaultMaxBytes = 5 * 1024 * 1024
 
@@ -7,8 +8,8 @@ const resolveOptionValue = (value) => (typeof value === 'function' ? value() : u
 export const useImageUpload = ({
   existingImageUrl = '',
   maxBytes = defaultMaxBytes,
-  typePrefix = 'image/',
-  invalidTypeMessage = '僅支援圖片檔。',
+  allowedTypes = ALLOWED_IMAGE_TYPES,
+  invalidTypeMessage = `僅支援 ${ALLOWED_IMAGE_LABEL}。`,
   maxBytesMessage = '圖片不可超過 5MB。',
   onError,
 } = {}) => {
@@ -41,7 +42,7 @@ export const useImageUpload = ({
 
     if (!file) return
 
-    if (!file.type.startsWith(typePrefix)) {
+    if (!allowedTypes.includes(file.type)) {
       setError(invalidTypeMessage)
       event.target.value = ''
       return

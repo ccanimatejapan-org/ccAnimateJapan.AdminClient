@@ -1,4 +1,6 @@
 <script setup>
+import { ALLOWED_IMAGE_ACCEPT } from '@/shared/constants/imageTypes'
+
 defineProps({
   images: {
     type: Array,
@@ -27,7 +29,7 @@ defineEmits(['change', 'remove-existing', 'remove-new'])
       <label class="image-file-drop" :class="{ 'is-disabled': remainingSlots <= 0 }">
         <input
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
+          :accept="ALLOWED_IMAGE_ACCEPT"
           multiple
           :disabled="remainingSlots <= 0"
           @change="$emit('change', $event)"

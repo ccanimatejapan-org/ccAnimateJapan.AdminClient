@@ -1,7 +1,8 @@
 import { computed, onBeforeUnmount, ref } from 'vue'
+import { ALLOWED_IMAGE_LABEL, ALLOWED_IMAGE_TYPES } from '@/shared/constants/imageTypes'
 
 const DEFAULT_MAX_BYTES = 5 * 1024 * 1024
-const DEFAULT_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+const DEFAULT_ALLOWED_TYPES = ALLOWED_IMAGE_TYPES
 
 const toNumber = (value, fallback = 0) => {
   const numberValue = Number(value)
@@ -20,7 +21,7 @@ export const useMultiImageUpload = ({
   imageFilesField = 'imageFiles',
   removeImageIdsField = 'removeImageIds',
   getExistingImageName = () => '',
-  invalidTypeMessage = '商品圖片僅支援 JPG、PNG、WebP 或 GIF。',
+  invalidTypeMessage = `商品圖片僅支援 ${ALLOWED_IMAGE_LABEL}。`,
   maxBytesMessage = '單張商品圖片不可超過 5MB。',
   limitReachedMessage = (max) => `商品圖片最多 ${max} 張。`,
   partialAcceptMessage = (max, accepted) => `商品圖片最多 ${max} 張，已加入前 ${accepted} 張。`,

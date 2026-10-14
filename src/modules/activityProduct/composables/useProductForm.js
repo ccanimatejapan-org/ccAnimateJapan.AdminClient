@@ -6,6 +6,7 @@ import {
   updateActivityProduct,
 } from '@/modules/activityProduct/api/activityProductApi'
 import { useMultiImageUpload } from '@/shared/composables/useMultiImageUpload'
+import { ALLOWED_IMAGE_TYPES } from '@/shared/constants/imageTypes'
 import { appendIfValue } from '@/shared/utils/formData'
 import {
   formatRequiredFieldsMessage,
@@ -22,7 +23,7 @@ import { getAdminToken } from '@/shared/stores/authSession'
 
 const PRODUCT_IMAGE_LIMIT = 5
 const PRODUCT_IMAGE_MAX_BYTES = 5 * 1024 * 1024
-const ALLOWED_PRODUCT_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+const ALLOWED_PRODUCT_IMAGE_TYPES = ALLOWED_IMAGE_TYPES
 
 // Product create/edit form: owns the reactive form + the multi-image upload, validates
 // (incl. the spot-activity integer-stock rule), builds the multipart payload, and saves /
