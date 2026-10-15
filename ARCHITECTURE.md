@@ -31,7 +31,7 @@ src/
 │  │                    #   useConfirmDialog、useImageUpload、useMultiImageUpload
 │  ├─ stores/           # uiStore(Pinia,loading)、authStore(Pinia)、authSession.js(token helper)
 │  ├─ utils/            # format、html、tableSort、validation、formData、download、clipboard、queryString
-│  └─ constants/        # routes.js（ROUTE_NAMES）
+│  └─ constants/        # routes.js（ROUTE_NAMES）、imageTypes.js（上傳圖片允許的格式，各圖片選擇器共用）
 └─ modules/             # 功能模組
    ├─ dashboard/  auth/  activity/  activityProduct/
    └─ animateType/  inventory/  order/  report/  wishPool/  customer/
@@ -120,6 +120,19 @@ XxxPage.vue (orchestration)
 **訂單顯示（`order` 模組 `OrderListPage.vue` + `orderColumns.js`）**
 
 - 訂單「金額 / 訂單總額」一律顯示後端算好的 **`grandTotal`（= 商品小計 `total` + 補運費 `shippingFee`）**，前端不自行加總；明細另列「商品小計 / 補運費」拆解（補運費 > 0 時）。列表排序基準也用 `grandTotal`。詳見 [後端計算顯示值] 原則。
+
+## 功能備註：圖片上傳格式
+
+- 所有圖片上傳（活動封面、作品、商品、商品批次匯入）只接受 **JPG、PNG、WebP、AVIF**，**不再接受 GIF**，與後端一致。格式清單、`<input accept>` 與錯誤訊息文字統一由 `src/shared/constants/imageTypes.js`（`ALLOWED_IMAGE_TYPES` / `ALLOWED_IMAGE_EXTENSIONS` / `ALLOWED_IMAGE_ACCEPT` / `ALLOWED_IMAGE_LABEL`）產生，各圖片選擇器與 `useImageUpload` / `useMultiImageUpload` 都引用它，不要在元件裡自己寫格式字串或只檢查 `image/*`。
+
+## 功能備註：商品批次匯入（預購）
+
+- **入口**：`activityProduct` 模組的商品頁（`ActivityProductsPage.vue`）工具列「批次匯入商品」按鈕，**只在預購活動顯示**；切換活動時會關閉視窗。按鈕開啟 `components/ProductImportDialog.vue`，狀態與流程集中在 `composables/useProductImport.js`，純函式（圖片清單整理、預覽結果 mapper、payload builder）在 `utils/productImport.js`，API 在 `api/activityProductApi.js`，樣式在 `styles/product-import-dialog.scss`。
+- **三個步驟**（`IMPORT_STEPS`）：選擇檔案（下載範本、選 Excel、以選資料夾或拖曳加入圖片）→ 預覽與檢查 → 匯入結果。範本下載時帶入商品頁設定的成本匯率 / 售價匯率（`activityRateDefaults`）。
+- **資料流**：預覽階段只送 Excel 與**圖片清單**（檔名 / 大小 / 類型，不送圖片本身）到 `.../products/import/preview`，後端回逐列驗證結果；有任何錯誤列時不能匯入（`canImport`）。正式匯入送預覽結果整理出的 `payload`（JSON）加上「Excel 有用到的圖片」到 `.../products/import`，**不會再送 Excel**。後端會重新驗證，前端驗證只是提早提示。
+- **前端鏡像後端限制**（`utils/productImport.js`，改後端上限時要一起改）：Excel ≤5MB、圖片每張 ≤5MB、最多 500 張、總共 ≤200MB、檔名不分大小寫比對。
+- **逾時與 loading**：圖片量大，正式匯入走 `silent: true`（不顯示全域 loading 遮罩，由視窗自己顯示上傳進度），逾時放寬到 15 分鐘。
+- **失敗語意**：後端回應「整批成功或整批不寫入」，因此匯入失敗時畫面顯示「沒有任何商品被新增」。**但若是網路中斷或逾時（沒有收到後端回應），後端可能已經寫入**，此時不要直接重送，先重新載入商品列表確認；後端沒有防重複機制，重送會建立重複商品。
 
 ## 功能備註：庫存顯示
 
