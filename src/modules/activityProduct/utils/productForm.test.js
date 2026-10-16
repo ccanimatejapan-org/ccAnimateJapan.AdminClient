@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import {
   buildProductPayload,
   createEmptyProductForm,
+  getProductLimitError,
   getSaleRateFromProduct,
 } from './productForm.js'
 
@@ -90,4 +91,26 @@ test('buildProductPayload omits amount when editing and sanitizes the info html'
   assert.equal('amount' in payload, false)
   assert.equal(payload.isOutStock, false)
   assert.equal(payload.info, 'safe')
+})
+
+test('getProductLimitError accepts normal values and values exactly at the limit', () => {
+  assert.equal(getProductLimitError(makeForm()), '')
+  assert.equal(
+    getProductLimitError(
+      makeForm({ japanCost: 10_000_000, rate: 10, price: 10_000_000, amount: 100_000 }),
+      { checkAmount: true },
+    ),
+    '',
+  )
+})
+
+test('getProductLimitError names the field that is above the limit', () => {
+  assert.match(getProductLimitError(makeForm({ japanCost: 10_000_001 })), /成本\(日\)/)
+  assert.match(getProductLimitError(makeForm({ rate: 10.5 })), /成本匯率/)
+  assert.match(getProductLimitError(makeForm({ price: 10_000_001 })), /售價/)
+  assert.match(getProductLimitError(makeForm({ amount: 100_001 }), { checkAmount: true }), /數量/)
+})
+
+test('getProductLimitError ignores the amount unless it is being created for a spot activity', () => {
+  assert.equal(getProductLimitError(makeForm({ amount: 999_999_999 })), '')
 })

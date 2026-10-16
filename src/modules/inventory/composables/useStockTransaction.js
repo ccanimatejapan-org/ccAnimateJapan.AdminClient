@@ -5,6 +5,7 @@ import {
 } from '@/modules/inventory/api/inventoryApi'
 import { getCostTwd } from '@/modules/activityProduct/utils/productPricing'
 import { toNumber } from '@/modules/activityProduct/utils/productMapper'
+import { getStockLimitError } from '@/modules/inventory/utils/stockTransactionRules'
 
 // Stock in/out flow: dialog + form state, the可出貨訂單 loader, order selection,
 // validation, and the create-then-reload save. `loadProducts` reloads the inventory
@@ -100,6 +101,12 @@ export const useStockTransaction = ({ loadProducts, statusMessage, errorMessage 
       transactionErrorMessage.value = transactionInOrOut.value
         ? '單位成本必須是大於或等於 0 的整數。'
         : '單位售價必須是大於或等於 0 的整數。'
+      return
+    }
+
+    const limitError = getStockLimitError({ amount, unitValue, inOrOut: transactionInOrOut.value })
+    if (limitError) {
+      transactionErrorMessage.value = limitError
       return
     }
 

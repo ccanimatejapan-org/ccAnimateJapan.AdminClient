@@ -17,6 +17,7 @@ import { mapProductFromApi, toNumber } from '@/modules/activityProduct/utils/pro
 import {
   buildProductPayload,
   createEmptyProductForm,
+  getProductLimitError,
   getSaleRateFromProduct,
 } from '@/modules/activityProduct/utils/productForm'
 import { getAdminToken } from '@/shared/stores/authSession'
@@ -96,6 +97,14 @@ export const useProductForm = ({
         errorMessage.value = '現貨商品數量必須是大於或等於 0 的整數。'
         return false
       }
+    }
+
+    const limitError = getProductLimitError(form, {
+      checkAmount: !editingProductId.value && isSpotActivity.value,
+    })
+    if (limitError) {
+      errorMessage.value = limitError
+      return false
     }
 
     return true
