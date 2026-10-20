@@ -30,6 +30,7 @@ import { getAdminToken } from '@/shared/stores/authSession'
 import { sanitizeHtml, stripHtml } from '@/shared/utils/html'
 import { formatDateTime } from '@/shared/utils/format'
 import { triggerBlobDownload } from '@/shared/utils/download'
+import { IMPORT_OUTCOME_UNKNOWN_MESSAGE } from '@/modules/activityProduct/utils/productImport'
 import {
   PRODUCT_STOCK_FILTERS,
   createEmptyProductFilters,
@@ -167,6 +168,16 @@ const openImportDialog = () => {
 const handleProductsImported = async (result) => {
   statusMessage.value = `已批次匯入 ${result.createdCount} 個商品、${result.imageCount} 張圖片。`
   await loadProducts()
+}
+
+// 匯入逾時或斷線、不知道商品有沒有寫入：重新載入列表讓使用者確認，並留下提醒，不讓他直接重送。
+const handleImportOutcomeUnknown = async () => {
+  statusMessage.value = ''
+  await loadProducts()
+  const loadError = errorMessage.value
+  errorMessage.value = loadError
+    ? `${IMPORT_OUTCOME_UNKNOWN_MESSAGE}商品列表也重新載入失敗：${loadError}`
+    : IMPORT_OUTCOME_UNKNOWN_MESSAGE
 }
 
 const isAnyDialogOpen = computed(
@@ -691,6 +702,7 @@ watch(
       :activity-rate-defaults="activityRateDefaults"
       @close="isImportDialogOpen = false"
       @imported="handleProductsImported"
+      @outcome-unknown="handleImportOutcomeUnknown"
     />
 
     <ProductDeleteConfirmDialog

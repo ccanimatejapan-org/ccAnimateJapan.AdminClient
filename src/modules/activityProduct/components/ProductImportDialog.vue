@@ -3,9 +3,12 @@ import { computed, ref } from 'vue'
 import AppButton from '@/shared/components/AppButton.vue'
 import IconButton from '@/shared/components/IconButton.vue'
 import MessageBlock from '@/shared/components/MessageBlock.vue'
+import { useLeaveGuard } from '@/shared/composables/useLeaveGuard'
 import { IMPORT_STEPS, readDroppedFiles, useProductImport } from '@/modules/activityProduct/composables/useProductImport'
 import {
   IMPORT_IMAGE_ACCEPT,
+  IMPORT_LEAVE_CONFIRM_MESSAGE,
+  IMPORT_OUTCOME_UNKNOWN_TITLE,
   MAX_IMPORT_IMAGE_FILES,
   MAX_IMPORT_IMAGE_TOTAL_BYTES,
   formatFileSize,
@@ -27,7 +30,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['close', 'imported'])
+const emit = defineEmits(['close', 'imported', 'outcome-unknown'])
 
 const {
   step,
@@ -46,6 +49,7 @@ const {
   canImport,
   isPreviewing,
   isImporting,
+  isOutcomeUnknown,
   isDownloadingTemplate,
   getThumbnailUrl,
   setExcelFile,
@@ -62,6 +66,9 @@ const {
   activityId: computed(() => props.activityId),
   activityRateDefaults: props.activityRateDefaults,
 })
+
+// 匯入進行中離開頁面（關閉分頁、重新整理、換頁）會看不到結果，先請使用者確認。
+useLeaveGuard(isImporting, IMPORT_LEAVE_CONFIRM_MESSAGE)
 
 const steps = [
   { value: IMPORT_STEPS.select, label: '選擇檔案' },
@@ -162,6 +169,7 @@ const close = () => {
 
 const confirmImport = async () => {
   if (await runImport()) emit('imported', result.value)
+  else if (isOutcomeUnknown.value) emit('outcome-unknown')
 }
 </script>
 
@@ -365,6 +373,13 @@ const confirmImport = async () => {
             <strong class="result-title">已匯入 {{ result.createdCount }} 個商品、{{ result.imageCount }} 張圖片</strong>
             <span v-if="result.noImageCount" class="muted">其中 {{ result.noImageCount }} 個商品沒有圖片，可在商品列表點「編輯」補上。</span>
           </template>
+          <template v-else-if="isOutcomeUnknown">
+            <span class="result-icon result-icon--warning" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 7v6" /><path d="M12 17h.01" /></svg>
+            </span>
+            <strong class="result-title">{{ IMPORT_OUTCOME_UNKNOWN_TITLE }}</strong>
+            <span class="muted">連線逾時或中斷，商品可能已經建立。已重新載入商品列表，請先確認列表，再決定要不要重新匯入。</span>
+          </template>
           <template v-else>
             <strong class="result-title">匯入失敗，沒有任何商品被新增</strong>
           </template>
@@ -418,7 +433,7 @@ const confirmImport = async () => {
         </template>
 
         <template v-else>
-          <AppButton v-if="!isImporting && !result" pill @click="backToPreview">回到預覽</AppButton>
+          <AppButton v-if="!isImporting && !result && !isOutcomeUnknown" pill @click="backToPreview">回到預覽</AppButton>
           <span class="actions-spacer"></span>
           <AppButton variant="primary" pill elevated :disabled="isImporting" @click="close">
             {{ result ? '完成' : '關閉' }}

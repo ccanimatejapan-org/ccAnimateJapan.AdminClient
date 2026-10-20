@@ -140,3 +140,29 @@ export const pickReferencedImageFiles = (rows, files) => {
 
   return [...picked.values()]
 }
+
+export const IMPORT_OUTCOME_UNKNOWN_TITLE = '無法確認匯入結果'
+export const IMPORT_OUTCOME_UNKNOWN_MESSAGE =
+  '無法確認匯入結果（連線逾時或中斷），商品可能已經建立。請先到商品列表確認，不要直接重新匯入。'
+export const IMPORT_LEAVE_CONFIRM_MESSAGE =
+  '商品還在匯入中。現在離開會看不到匯入結果，商品可能已經建立。確定要離開嗎？'
+
+// 沒有收到後端回覆的狀態：0＝斷線或被中止、408＝前端逾時、502/503/504＝閘道逾時。
+const OUTCOME_UNKNOWN_STATUSES = [0, 408, 502, 503, 504]
+
+// 後端自己的失敗回覆都帶 envelope 的 status 欄位，代表後端已處理並明確回覆失敗（會做補償）。
+const hasBackendReply = (error) => {
+  const data = error?.responseData
+  return Boolean(data) && typeof data === 'object' && 'status' in data
+}
+
+// 匯入失敗時判斷結果：有後端回覆才能確定「沒有任何商品被新增」；逾時或斷線時商品可能已經寫入，
+// 這時不能讓使用者直接重送（後端沒有防重複），要先確認商品列表。
+export const describeImportFailure = (error) => {
+  const status = Number(error?.status) || 0
+  if (!hasBackendReply(error) && OUTCOME_UNKNOWN_STATUSES.includes(status)) {
+    return { outcomeUnknown: true, message: IMPORT_OUTCOME_UNKNOWN_MESSAGE }
+  }
+
+  return { outcomeUnknown: false, message: error?.message || '匯入失敗，沒有任何商品被新增。' }
+}
