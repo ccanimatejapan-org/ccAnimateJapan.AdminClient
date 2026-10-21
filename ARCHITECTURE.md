@@ -28,7 +28,7 @@ src/
 │  ├─ api/              # httpClient.js(axios)、apiResponse.js
 │  ├─ components/       # 全站共用 UI（AppButton、FormField、PageShell、CustomSelect、ProductTable…）
 │  ├─ composables/      # useTableSort、useTablePagination、useNoteDialog、useDialogScrollLock、
-│  │                    #   useConfirmDialog、useImageUpload、useMultiImageUpload
+│  │                    #   useConfirmDialog、useImageUpload、useMultiImageUpload、useLeaveGuard
 │  ├─ stores/           # uiStore(Pinia,loading)、authStore(Pinia)、authSession.js(token helper)
 │  ├─ utils/            # format、html、tableSort、validation、formData、download、clipboard、queryString
 │  └─ constants/        # routes.js（ROUTE_NAMES）、imageTypes.js（上傳圖片允許的格式，各圖片選擇器共用）、productLimits.js（商品 / 庫存手動輸入數值的上限，鏡像後端 `ProductValueLimits`）
@@ -138,7 +138,8 @@ XxxPage.vue (orchestration)
 - **資料流**：預覽階段只送 Excel 與**圖片清單**（檔名 / 大小 / 類型，不送圖片本身）到 `.../products/import/preview`，後端回逐列驗證結果；有任何錯誤列時不能匯入（`canImport`）。正式匯入送預覽結果整理出的 `payload`（JSON）加上「Excel 有用到的圖片」到 `.../products/import`，**不會再送 Excel**。後端會重新驗證，前端驗證只是提早提示。
 - **前端鏡像後端限制**（`utils/productImport.js`，改後端上限時要一起改）：Excel ≤5MB、圖片每張 ≤5MB、最多 500 張、總共 ≤200MB、檔名不分大小寫比對。
 - **逾時與 loading**：圖片量大，正式匯入走 `silent: true`（不顯示全域 loading 遮罩，由視窗自己顯示上傳進度），逾時放寬到 15 分鐘。
-- **失敗語意**：後端回應「整批成功或整批不寫入」，因此匯入失敗時畫面顯示「沒有任何商品被新增」。**但若是網路中斷或逾時（沒有收到後端回應），後端可能已經寫入**，此時不要直接重送，先重新載入商品列表確認；後端沒有防重複機制，重送會建立重複商品。
+- **失敗語意**：後端回應「整批成功或整批不寫入」，因此收到後端明確的失敗回覆時，畫面顯示後端訊息，並可「回到預覽」修正後重送。**但若是網路中斷或逾時（沒有收到後端回應），後端可能已經寫入**；後端沒有防重複機制，重送會建立重複商品。因此 `utils/productImport.js` 的 `describeImportFailure` 把「沒有後端 envelope 回覆」且狀態為 0（斷線）、408（前端逾時）、502 / 503 / 504（閘道逾時）的錯誤視為「結果不確定」：結果頁顯示「無法確認匯入結果」、**拿掉「回到預覽」**（`useProductImport` 的 `isOutcomeUnknown`；`backToPreview` 也會擋下），對話框 emit `outcome-unknown`，商品頁（`handleImportOutcomeUnknown`）重新載入列表並留下提醒，使用者要先確認列表，需要重送時關閉視窗重新開啟。
+- **匯入中離開頁面**：對話框用 `shared/composables/useLeaveGuard`（純函式在 `shared/utils/leaveGuard.js`）在匯入進行中攔截關閉分頁 / 重新整理（`beforeunload`）與站內換頁（`onBeforeRouteLeave`、`onBeforeRouteUpdate`，會跳出確認）。使用者仍選擇離開時，請求不會被中止，但結果會遺失，回到商品列表重新載入即可看到實際結果。
 
 ## 功能備註：庫存顯示
 

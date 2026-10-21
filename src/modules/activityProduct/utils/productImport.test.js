@@ -1,10 +1,13 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
+import { ApiError } from '../../../shared/api/apiResponse.js'
 import {
+  IMPORT_OUTCOME_UNKNOWN_MESSAGE,
   MAX_IMPORT_IMAGE_FILES,
   buildImageManifest,
   buildImportPayload,
+  describeImportFailure,
   getImageSetError,
   getRowStatus,
   mapPreviewResponse,
@@ -68,4 +71,48 @@ test('buildImportPayload and pickReferencedImageFiles only send what the rows us
   assert.deepEqual(payload.items[0].imageFileNames, ['A1.jpg', 'a2.png'])
   assert.equal(payload.items[1].rowNumber, 3)
   assert.deepEqual(pickReferencedImageFiles(rows, images).map((image) => image.name), ['a1.jpg', 'A2.png'])
+})
+
+test('describeImportFailure treats timeouts, dropped connections and gateway errors as an unknown outcome', () => {
+  const unknownErrors = [
+    new ApiError('連線逾時，請稍後再試。', 408, null),
+    new ApiError('Network Error', 0),
+    new ApiError('Request failed (502)', 502, '<html>Bad Gateway</html>'),
+    new ApiError('Request failed (503)', 503, null),
+    new ApiError('Request failed (504)', 504, '<html>Gateway Timeout</html>'),
+    new Error('boom'),
+  ]
+
+  for (const error of unknownErrors) {
+    assert.deepEqual(describeImportFailure(error), {
+      outcomeUnknown: true,
+      message: IMPORT_OUTCOME_UNKNOWN_MESSAGE,
+    })
+  }
+})
+
+test('describeImportFailure keeps the backend message when the backend replied with a failure', () => {
+  const backendErrors = [
+    new ApiError('商品名稱重複', 409, { status: '409', message: '商品名稱重複' }),
+    new ApiError('Server error', 500, { status: '500', message: 'Server error' }),
+    new ApiError('Bad request', 400, { status: 400, title: 'One or more validation errors occurred.' }),
+    new ApiError('Request failed (401)', 401, ''),
+    new ApiError('Request failed (413)', 413, '<html>Payload Too Large</html>'),
+  ]
+
+  for (const error of backendErrors) {
+    assert.deepEqual(describeImportFailure(error), { outcomeUnknown: false, message: error.message })
+  }
+})
+
+test('describeImportFailure explains that nothing was created when a known failure has no message', () => {
+  assert.deepEqual(describeImportFailure(new ApiError('', 400, { status: '400' })), {
+    outcomeUnknown: false,
+    message: '匯入失敗，沒有任何商品被新增。',
+  })
+})
+
+test('the unknown-outcome message warns that products may exist and not to re-import blindly', () => {
+  assert.match(IMPORT_OUTCOME_UNKNOWN_MESSAGE, /可能已經建立/)
+  assert.match(IMPORT_OUTCOME_UNKNOWN_MESSAGE, /不要直接重新匯入/)
 })

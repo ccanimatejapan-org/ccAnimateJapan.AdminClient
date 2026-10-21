@@ -10,6 +10,7 @@ import {
   buildImageManifest,
   buildImportPayload,
   createImageLookup,
+  describeImportFailure,
   findImageFile,
   getImageSetError,
   isExcelFile,
@@ -72,6 +73,8 @@ export const useProductImport = ({ activityId, activityRateDefaults }) => {
   const onlyErrors = ref(false)
   const isPreviewing = ref(false)
   const isImporting = ref(false)
+  // 逾時或斷線時不知道商品有沒有寫入：此時不能回到預覽重送，要先確認商品列表。
+  const isOutcomeUnknown = ref(false)
   const isDownloadingTemplate = ref(false)
   const progress = reactive({ phase: '', percent: 0, loaded: 0, total: 0 })
   const thumbnailUrls = new Map()
@@ -192,6 +195,7 @@ export const useProductImport = ({ activityId, activityRateDefaults }) => {
     const images = pickReferencedImageFiles(rows, imageFiles.value)
     step.value = IMPORT_STEPS.result
     isImporting.value = true
+    isOutcomeUnknown.value = false
     errorMessage.value = ''
     result.value = null
     Object.assign(progress, {
@@ -224,7 +228,10 @@ export const useProductImport = ({ activityId, activityRateDefaults }) => {
       return true
     } catch (err) {
       progress.phase = 'failed'
-      errorMessage.value = err.message || '匯入失敗，沒有任何商品被新增。'
+      const failure = describeImportFailure(err)
+      isOutcomeUnknown.value = failure.outcomeUnknown
+      // 結果不確定時，說明由結果頁的面板顯示，不另外跳錯誤訊息。
+      errorMessage.value = failure.outcomeUnknown ? '' : failure.message
       return false
     } finally {
       isImporting.value = false
@@ -237,6 +244,8 @@ export const useProductImport = ({ activityId, activityRateDefaults }) => {
   }
 
   const backToPreview = () => {
+    if (isOutcomeUnknown.value) return
+
     resetMessages()
     step.value = IMPORT_STEPS.preview
   }
@@ -248,6 +257,7 @@ export const useProductImport = ({ activityId, activityRateDefaults }) => {
     imageFiles.value = []
     preview.value = null
     result.value = null
+    isOutcomeUnknown.value = false
     onlyErrors.value = false
     resetMessages()
     Object.assign(progress, { phase: '', percent: 0, loaded: 0, total: 0 })
@@ -288,6 +298,7 @@ export const useProductImport = ({ activityId, activityRateDefaults }) => {
     canImport,
     isPreviewing,
     isImporting,
+    isOutcomeUnknown,
     isDownloadingTemplate,
     getThumbnailUrl,
     setExcelFile,

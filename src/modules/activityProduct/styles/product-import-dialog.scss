@@ -668,6 +668,12 @@ $warning-line: #f3c98b;
   background: $green-soft;
   color: $green;
 
+  &--warning {
+    border-color: $warning-line;
+    background: $warning-soft;
+    color: $warning;
+  }
+
   svg {
     width: 30px;
     height: 30px;
