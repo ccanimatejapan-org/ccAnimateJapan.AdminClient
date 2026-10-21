@@ -8,6 +8,7 @@ import IconButton from '@/shared/components/IconButton.vue'
 import MessageBlock from '@/shared/components/MessageBlock.vue'
 import ProductImagePicker from './ProductImagePicker.vue'
 import { toNumber } from '@/modules/activityProduct/utils/productMapper'
+import { MAX_JAPAN_COST, MAX_PRICE, MAX_RATE, MAX_STOCK_QUANTITY } from '@/shared/constants/productLimits'
 
 const props = defineProps({
   form: {
@@ -126,16 +127,16 @@ const onPriceInput = (event) => {
           <input v-model="form.name" required placeholder="商品名稱" />
         </FormField>
         <FormField label="成本(日)" soft>
-          <input v-model.number="form.japanCost" min="0" type="number" required @input="onJapanCostInput" />
+          <input v-model.number="form.japanCost" min="0" :max="MAX_JAPAN_COST" type="number" required @input="onJapanCostInput" />
         </FormField>
         <FormField label="成本匯率" soft>
-          <input v-model.number="form.rate" min="0" step="0.0001" type="number" required />
+          <input v-model.number="form.rate" min="0" :max="MAX_RATE" step="0.0001" type="number" required />
         </FormField>
         <FormField label="售價匯率" soft>
           <input v-model.number="form.saleRate" min="0" step="0.0001" type="number" required @input="onSaleRateInput" />
         </FormField>
         <FormField label="售價(台)" soft>
-          <input v-model.number="form.price" min="0" type="number" required @input="onPriceInput" />
+          <input v-model.number="form.price" min="0" :max="MAX_PRICE" type="number" required @input="onPriceInput" />
         </FormField>
         <FormField as="div" label="商品類型">
           <CustomSelect
@@ -160,6 +161,7 @@ const onPriceInput = (event) => {
           <input
             v-model.number="form.amount"
             min="0"
+            :max="MAX_STOCK_QUANTITY"
             step="1"
             type="number"
             :readonly="Boolean(editingProductId)"

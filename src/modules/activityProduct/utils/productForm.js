@@ -1,4 +1,5 @@
 import { sanitizeHtml } from '@/shared/utils/html'
+import { MAX_JAPAN_COST, MAX_PRICE, MAX_RATE, MAX_STOCK_QUANTITY } from '@/shared/constants/productLimits'
 import { toNumber } from '@/modules/activityProduct/utils/productMapper'
 
 export const createEmptyProductForm = () => ({
@@ -20,6 +21,21 @@ export const getSaleRateFromProduct = (product) => {
   if (japanCost <= 0) return toNumber(product.rate, createEmptyProductForm().saleRate)
 
   return Number((price / japanCost).toFixed(4))
+}
+
+const formatLimit = (value) => value.toLocaleString('en-US')
+
+// Returns a message for the first number above its limit, or '' when every number is within range.
+// The initial stock is only checked when it is actually sent (creating a product in a spot activity).
+export const getProductLimitError = (form, { checkAmount = false } = {}) => {
+  if (Number(form.japanCost) > MAX_JAPAN_COST) return `成本(日)不可超過 ${formatLimit(MAX_JAPAN_COST)}。`
+  if (Number(form.rate) > MAX_RATE) return `成本匯率不可超過 ${MAX_RATE}。`
+  if (Number(form.price) > MAX_PRICE) return `售價不可超過 ${formatLimit(MAX_PRICE)}。`
+  if (checkAmount && Number(form.amount) > MAX_STOCK_QUANTITY) {
+    return `商品數量不可超過 ${formatLimit(MAX_STOCK_QUANTITY)}。`
+  }
+
+  return ''
 }
 
 // Pure payload-shape helper: trims/coerces the form fields and conditionally adds the

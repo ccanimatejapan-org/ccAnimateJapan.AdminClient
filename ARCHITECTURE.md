@@ -31,7 +31,7 @@ src/
 │  │                    #   useConfirmDialog、useImageUpload、useMultiImageUpload
 │  ├─ stores/           # uiStore(Pinia,loading)、authStore(Pinia)、authSession.js(token helper)
 │  ├─ utils/            # format、html、tableSort、validation、formData、download、clipboard、queryString
-│  └─ constants/        # routes.js（ROUTE_NAMES）、imageTypes.js（上傳圖片允許的格式，各圖片選擇器共用）
+│  └─ constants/        # routes.js（ROUTE_NAMES）、imageTypes.js（上傳圖片允許的格式，各圖片選擇器共用）、productLimits.js（商品 / 庫存手動輸入數值的上限，鏡像後端 `ProductValueLimits`）
 └─ modules/             # 功能模組
    ├─ dashboard/  auth/  activity/  activityProduct/
    └─ animateType/  inventory/  order/  report/  wishPool/  customer/
@@ -124,6 +124,12 @@ XxxPage.vue (orchestration)
 ## 功能備註：圖片上傳格式
 
 - 所有圖片上傳（活動封面、作品、商品、商品批次匯入）只接受 **JPG、PNG、WebP、AVIF**，**不再接受 GIF**，與後端一致。格式清單、`<input accept>` 與錯誤訊息文字統一由 `src/shared/constants/imageTypes.js`（`ALLOWED_IMAGE_TYPES` / `ALLOWED_IMAGE_EXTENSIONS` / `ALLOWED_IMAGE_ACCEPT` / `ALLOWED_IMAGE_LABEL`）產生，各圖片選擇器與 `useImageUpload` / `useMultiImageUpload` 都引用它，不要在元件裡自己寫格式字串或只檢查 `image/*`。
+
+## 功能備註：商品 / 庫存數值上限
+
+- 商品的日幣成本、售價（≤ 10,000,000）、成本匯率（≤ 10）、現貨初始數量（≤ 100,000），以及庫存異動的單筆數量（≤ 100,000）、單位成本 / 售價（≤ 100,000,000）都有上限，常數集中在 `src/shared/constants/productLimits.js`，**必須與後端 `ccAnimateJapan.AdminAPI` 的 `Application/Common/ProductValueLimits.cs` 一致**（後端才是最後防線，超過會被擋）。
+- 前端做兩件事：數字輸入欄加 `max`，以及送出前由純函式 `getProductLimitError`（`activityProduct/utils/productForm.js`）、`getStockLimitError`（`inventory/utils/stockTransactionRules.js`）檢查並顯示明確訊息。兩個表單都是 `novalidate`，所以光靠 `max` 屬性不會擋送出，驗證一定要走這些函式。
+- 進貨有「30 秒內相同進貨視為重複送出」的後端防呆，回 `409`，訊息會直接顯示在庫存異動對話框（`err.message`）；不需要前端額外處理，但按鈕仍維持 `isSavingTransaction` 期間停用。
 
 ## 功能備註：商品批次匯入（預購）
 

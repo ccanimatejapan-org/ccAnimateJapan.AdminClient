@@ -5,6 +5,7 @@ import AppButton from '@/shared/components/AppButton.vue'
 import FormField from '@/shared/components/FormField.vue'
 import IconButton from '@/shared/components/IconButton.vue'
 import MessageBlock from '@/shared/components/MessageBlock.vue'
+import { MAX_STOCK_QUANTITY } from '@/shared/constants/productLimits'
 
 const props = defineProps({
   product: {
@@ -98,7 +99,7 @@ const selectOrder = (orderId) => {
         </FormField>
 
         <FormField label="數量" soft>
-          <input v-model.number="form.amount" :readonly="!inOrOut" min="1" required step="1" type="number" />
+          <input v-model.number="form.amount" :readonly="!inOrOut" min="1" :max="MAX_STOCK_QUANTITY" required step="1" type="number" />
         </FormField>
 
         <FormField v-if="inOrOut" label="單位成本（台幣）" soft>
