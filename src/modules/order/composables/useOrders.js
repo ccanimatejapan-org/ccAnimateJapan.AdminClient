@@ -8,6 +8,7 @@ import {
 } from '@/modules/order/api/orderApi'
 import { isActivityReadOnly } from '@/modules/order/utils/activityOrderStatus'
 import { resolveSelectedActivityId } from '@/modules/order/utils/orderActivitySelection'
+import { matchesOrderKeyword } from '@/modules/order/utils/orderSearch'
 
 const normalizeText = (value) => String(value || '').trim().toLowerCase()
 
@@ -40,11 +41,10 @@ export const useOrders = ({ errorMessage, selectedOrder }) => {
   const selectedActivityReadOnly = computed(() => isActivityReadOnly(selectedActivity.value))
 
   const filteredOrders = computed(() => {
-    const keyword = normalizeText(searchKeyword.value)
     const selectedOrderStatus = statusFilter.value ? Number(statusFilter.value) : null
 
     return orders.value.filter((order) => {
-      if (keyword && !normalizeText(order.subscriberName).includes(keyword)) {
+      if (!matchesOrderKeyword(order, searchKeyword.value)) {
         return false
       }
 

@@ -514,8 +514,12 @@ onUnmounted(() => {
         <section class="filter-panel" aria-label="訂單搜尋條件">
           <div class="filter-bar">
             <label>
-              <span>訂購人</span>
-              <input v-model.trim="searchKeyword" type="search" />
+              <span>搜尋</span>
+              <input
+                v-model.trim="searchKeyword"
+                type="search"
+                placeholder="訂單編號、訂購人、LINE 名稱"
+              />
             </label>
 
             <label>
