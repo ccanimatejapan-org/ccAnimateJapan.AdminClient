@@ -10,8 +10,9 @@ import {
 
 const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim())
 
-// 商品備註 / 規格長度上限：與顧客端加入購物車的備註上限（WebAPI AddCartItemHandler.MaxNoteLength = 80）
-// 以及後端 OrderService.MaxOrderProductInfoLength 一致；比顧客端短的話，編輯訂單存檔會把備註截斷。
+// 商品備註 / 規格長度上限：與顧客端加入購物車的備註上限（WebAPI AddCartItemHandler.MaxNoteLength = 80、
+// WebClient 的 cartStore / cartMapper / ProductAddDialog 也都是 80）以及後端 AdminAPI 的
+// OrderItemRules.MaxInfoLength 一致；比顧客端短的話，編輯訂單存檔會把備註截斷。調整時這幾處要一起改。
 export const ORDER_ITEM_INFO_MAX_LENGTH = 80
 
 const clampItemInfo = (value) => String(value || '').trim().slice(0, ORDER_ITEM_INFO_MAX_LENGTH)
