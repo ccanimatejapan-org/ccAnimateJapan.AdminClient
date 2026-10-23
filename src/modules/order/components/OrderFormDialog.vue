@@ -4,6 +4,7 @@ import CustomSelect from '@/shared/components/CustomSelect.vue'
 import AppButton from '@/shared/components/AppButton.vue'
 import IconButton from '@/shared/components/IconButton.vue'
 import MessageBlock from '@/shared/components/MessageBlock.vue'
+import { ORDER_ITEM_INFO_MAX_LENGTH } from '@/modules/order/utils/orderForm'
 
 const props = defineProps({
   form: {
@@ -116,8 +117,8 @@ const getShippingPaymentStatusLabel = () =>
         </label>
 
         <label class="order-form-field">
-          <span>帳號後五碼</span>
-          <input v-model="props.form.subscriberBank" required />
+          <span>帳號後五碼（選填）</span>
+          <input v-model="props.form.subscriberBank" />
         </label>
 
         <div class="form-field">
@@ -250,7 +251,7 @@ const getShippingPaymentStatusLabel = () =>
 
               <label class="order-form-field order-form-field--item-info">
                 <span>商品備註 / 關鍵字</span>
-                <input v-model="item.info" maxlength="10" />
+                <input v-model="item.info" :maxlength="ORDER_ITEM_INFO_MAX_LENGTH" />
               </label>
 
               <label class="order-form-field order-form-field--quantity">

@@ -5,6 +5,7 @@ import {
   buildUpdateOrderPayload,
   createEmptyOrderForm,
   createEmptyOrderItem,
+  createOrderItemFromDetail,
   validateOrderForm,
 } from '@/modules/order/utils/orderForm'
 
@@ -83,11 +84,7 @@ export const useOrderForm = ({
         paymentStatus: detail.paymentStatus || 1,
         shippingFee: detail.shippingFee || 0,
         shippingPaymentStatus: detail.shippingPaymentStatus || 0,
-        items: (detail.items || []).map((item) => ({
-          productId: item.productId,
-          amount: item.amount,
-          info: String(item.info || '').slice(0, 10),
-        })),
+        items: (detail.items || []).map(createOrderItemFromDetail),
       }
       if (orderForm.value.items.length === 0) {
         orderForm.value.items = [createEmptyOrderItem()]

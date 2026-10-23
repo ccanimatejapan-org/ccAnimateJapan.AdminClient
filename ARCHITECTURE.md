@@ -138,6 +138,9 @@ XxxPage.vue (orchestration)
 - 左側活動列表只列活動（名稱、類型、狀態、未處理筆數徽章），**不再有「可訂購商品」摘要區塊**。頁面載入與切換活動時**不再取商品清單**：`products`（`/api/orders/activities/{id}/products`）只給「編輯訂單」視窗的商品下拉選單使用，改由 `useOrderForm.openEditOrder` 在打開視窗時才呼叫 `useOrders.loadProducts()`（與訂單明細同時發出，視窗顯示時已備妥）。
 - **活動分頁（尚未結單 / 已結單 / 預購已完成 / 商品已入庫 / 已完成）由後端依「該活動所有非取消訂單的最低訂單狀態」歸類**（見後端 `OrderActivityTab`），所以訂單狀態一改，活動可能就要換分頁。
 - **狀態變更後立即重整**：編輯訂單儲存、批次改狀態（`一鍵改為…`）、刪除訂單、寄送確認信（後端會把狀態改成「已寄送訂單確認信」，且先改狀態再寄信，所以成功或失敗都重整）完成後，頁面呼叫 `refreshOrderPage`：`useOrders.refreshAfterOrderChange()`（重新取得活動列表、目前活動的訂單、開著的訂單明細）加上 `newOrdersStore.refresh()`（頁首鈴鐺與活動徽章的未處理數）。重整會**停留在目前分頁 / 活動 / 搜尋條件 / 頁碼**（活動列表以 `preserveSelection` 載入，純函式 `utils/orderActivitySelection.js`）；只有目前活動已不屬於這個分頁（例如批次改成「預購已完成」後移到下一個分頁）時，才退回列表第一個活動並回到第 1 頁。
+- **訂單編號顯示**：列表第一欄（欄位名稱「訂單編號」）與右側明細標題都顯示顧客看到的訂單編號（`orderNo`，如 `CJ202610230003`），沒有編號的訂單（後台自建、較早的）退回內部 id（`#265`），統一走 `utils/orderDisplay.js` 的 `formatOrderNumber`（刪除確認視窗也用它）。該欄排序仍用內部 id。列表 API（`OrderResponse`）與明細 API 都帶 `orderNo`。
+- **訂單明細欄位**：右側明細標題是訂單編號，下面的 `detail-grid` 一列三欄（手機寬度 ≤ 620px 改單欄）：訂購人 / Email / 帳號後五碼；配送方式 / 收件電話（`recipientPhone`）/ 收件地址（`address`）；訂單狀態 / 付款狀態 / 建立時間；有補運費時另起一列顯示「自行補運費」（`detail-grid__wide`）。收件電話與地址是顧客下單當下的快照，由後端 `GET /api/orders/{id}` 回傳，沒有值（後台自建、較早的訂單、面交無地址）顯示 `-`。
+- **編輯 / 新增訂單表單**（`OrderFormDialog`、`utils/orderForm.js`）：「帳號後五碼」為**選填**（前後端都不擋，留空後端存 `null`）；商品備註 / 規格長度上限用 `orderForm.js` 匯出的 `ORDER_ITEM_INFO_MAX_LENGTH`（**80**，與顧客端購物車備註、後端 `OrderService.MaxOrderProductInfoLength` 一致）。三處（輸入框 `maxlength`、載入編輯表單 `createOrderItemFromDetail`、組 payload `buildBaseOrderPayload`）都走這個常數，調整上限時要連同前台 `cartStore` / 後端一起改，否則編輯存檔會把顧客備註截斷。
 - **競態**：`useOrders` 的活動 / 商品 / 訂單 / 明細載入、`newOrdersStore.refresh` 都用 request token（寫法同 `ReportsPage`），只採用最後一次發出的回應，舊回應晚到不會蓋掉新資料。儲存 / 刪除 / 批次 / 寄信的 in-flight 旗標（`isSavingOrder`、`isDeletingOrder`、`isBulkUpdatingStatus`、`sendingConfirmationOrderId`）在重整完成前都維持 true，防止重複送出。
 
 ## 靜態資源（assets / public）與 favicon
