@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { clearAdminToken, getAdminToken } from '@/shared/stores/authSession'
+import { syncAuthStoreFromStorage } from '@/shared/stores/authStore'
 import { useUiStore } from '@/shared/stores/uiStore'
 import { ApiError, unwrapApiResponse } from './apiResponse'
 
@@ -56,9 +57,12 @@ httpClient.interceptors.request.use((config) => {
 
 let redirectingToLogin = false
 
-// 401：清 token + 導回登入（AdminClient 是密碼 JWT、無 token 續期）。
-const handleUnauthorized = async () => {
+// 登入失效（401 或 token 已過期，後者由 useSessionExpiryWatcher 偵測）：
+// 清 token、同步 authStore、導回登入（AdminClient 是密碼 JWT、無 token 續期）。
+// redirectingToLogin 防止多個請求同時 401 / 多個事件同時偵測到過期時重複導頁。
+export const handleUnauthorized = async () => {
   clearAdminToken()
+  syncAuthStoreFromStorage()
   if (redirectingToLogin) return
   redirectingToLogin = true
   try {

@@ -39,6 +39,8 @@ node --import ./tools/test-alias.register.mjs --test
 - **模組結構**：功能放 `src/modules/{feature}/`（`pages/ components/ composables/ utils/ api/ styles/ routes.js`，依需要）。`src/shared/` 放跨模組共用平台程式，**不可 import `src/modules/`**；模組之間原則上不互相 import，少數**領域相依**允許（如 `inventory` 用 `order`/`activityProduct` 的 api、`report` 用 `activity` 的 mapper）——見 `ARCHITECTURE.md`。
 - **路由**：route name 集中在 `src/shared/constants/routes.js` 的 `ROUTE_NAMES`，各模組 `routes.js` 只引用；頁面 lazy load。新增流程：補 `ROUTE_NAMES` → 模組 `routes.js` → `router/index.js` spread 進來。
 - **API 寫法**：一律走 `src/shared/api/httpClient.js`（唯一 axios 實例）。攔截器**自動帶 `Authorization: Bearer`**、處理 401、解開 envelope `{status,data,message}`（`unwrapApiResponse`，成功判斷 `Number(status)<400`）。**api 檔不要自己帶 auth header**；endpoint 字串只出現在 api 檔。二進位下載走 `apiBlob`。
+- **登入狀態**：JWT 存 localStorage。判斷是否登入用 `authSession.isAdminAuthenticated()`（含 `exp` 檢查，過期即清除 token）；`getAdminToken()` 只回傳原始 token、不檢查過期。重新開啟頁面由 router 守衛處理，頁面常開、分頁切回由 `DefaultLayout` 的 `useSessionExpiryWatcher` 處理，401 走 `httpClient.handleUnauthorized`（皆會同步 `authStore`）。細節見 `ARCHITECTURE.md`「功能備註：登入過期」。
+- **訂單管理頁**：任何會改變訂單狀態 / 所屬分頁的動作（編輯儲存、批次改狀態、刪除、寄確認信），完成後都要走頁面的 `refreshOrderPage`（活動列表 + 訂單 + 明細 + 未處理數；商品清單只在打開編輯視窗時才取），不要只呼叫 `loadOrders`；載入函式用 request token 防止舊回應蓋掉新資料。見 `ARCHITECTURE.md`「功能備註：訂單管理頁」。
 - **下拉選單**統一用 `CustomSelect`，依模組套紅 / 橘 / 綠 / 黃 tone。
 - **顯示值由後端算**：如訂單金額一律顯示後端的 `grandTotal`（＝商品小計 `total` + 補運費 `shippingFee`），前端不自行加總；庫存只顯示 API 的 `amount` / `isOutStock`。
 - **樣式**：頁面 scss 以 `<style scoped lang="scss" src="../styles/xxx.scss">` 外掛（保持 scoped、SFC 變薄）；色彩 / 間距用 `src/styles/variables.scss` 的 token。

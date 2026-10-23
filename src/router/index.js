@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import { isAdminAuthenticated } from '@/shared/stores/authSession'
+import { syncAuthStoreFromStorage } from '@/shared/stores/authStore'
 import dashboardRoutes from '@/modules/dashboard/routes'
 import authRoutes from '@/modules/auth/routes'
 import orderRoutes from '@/modules/order/routes'
@@ -76,7 +77,10 @@ router.beforeEach((to, from, next) => {
   }
 
   const isLoginPage = to.path === '/pages/login'
+  // isAdminAuthenticated 會檢查 JWT 的 exp：token 已過期時會順手清掉並回傳 false，
+  // 所以重新開啟頁面（含 / 與 /dashboard）時，過期的登入一律在這裡被導回登入頁。
   const isLoggedIn = isAdminAuthenticated()
+  if (!isLoggedIn) syncAuthStoreFromStorage()
 
   if (!isLoginPage && !isLoggedIn) {
     next('/pages/login')

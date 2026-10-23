@@ -88,7 +88,6 @@ const orderColumns = createOrderColumns()
 const {
   activities,
   selectedActivityId,
-  expandedActivityId,
   deliveryTypes,
   products,
   orders,
@@ -106,9 +105,14 @@ const {
   loadDeliveryTypes,
   loadProducts,
   loadOrders,
+  refreshAfterOrderChange,
   selectActivity,
   switchActivityTab,
 } = useOrders({ errorMessage, selectedOrder })
+
+// 訂單狀態 / 內容變更（編輯、批次改狀態、刪除、寄確認信）後的立即重整：
+// 訂單頁資料（活動列表、訂單、明細）與頁首鈴鐺 / 活動徽章的未處理計數一起重新取得。
+const refreshOrderPage = () => Promise.all([refreshAfterOrderChange(), newOrdersStore.refresh()])
 
 const activityTabs = [
   { value: ORDER_ACTIVITY_TABS.INCOMPLETE, label: '尚未結單' },
@@ -180,7 +184,7 @@ const {
   errorMessage,
   isLoadingDetail,
   loadProducts,
-  loadOrders,
+  refreshAfterChange: refreshOrderPage,
 })
 
 const {
@@ -189,7 +193,7 @@ const {
   isSendingConfirmationEmail,
   downloadOrderPdfFile,
   sendConfirmationEmail,
-} = useOrderRowActions({ errorMessage, statusMessage })
+} = useOrderRowActions({ errorMessage, statusMessage, refreshAfterChange: refreshOrderPage })
 
 const deleteTargetOrder = ref(null)
 const isDeletingOrder = ref(false)
@@ -201,12 +205,6 @@ const resetFilters = () => {
   searchKeyword.value = ''
   statusFilter.value = ''
   page.value = 1
-}
-
-// 存檔後同步刷新未處理計數，讓活動徽章與頁首鈴鐺立即反映狀態變更
-const handleSubmitOrder = async () => {
-  await submitOrderForm()
-  newOrdersStore.refresh()
 }
 
 const openOrderDetail = async (orderId) => {
@@ -235,26 +233,32 @@ const closeDeleteDialog = () => {
   deleteTargetOrder.value = null
 }
 
+// 刪除成功後立刻重整；重整期間 isDeletingOrder 維持 true，避免重複觸發。
 const confirmDeleteOrder = async () => {
-  if (!deleteTargetOrder.value) return
+  if (!deleteTargetOrder.value || isDeletingOrder.value) return
+
+  const deletedOrderId = deleteTargetOrder.value.id
 
   isDeletingOrder.value = true
   errorMessage.value = ''
 
   try {
-    await deleteOrder(deleteTargetOrder.value.id)
-    if (editingOrderId.value === deleteTargetOrder.value.id) {
+    try {
+      await deleteOrder(deletedOrderId)
+    } catch (err) {
+      errorMessage.value = err?.message || '訂單刪除失敗'
+      return
+    }
+
+    if (editingOrderId.value === deletedOrderId) {
       closeOrderDialog()
       editingOrderId.value = null
     }
-    if (selectedOrder.value?.id === deleteTargetOrder.value.id) {
+    if (selectedOrder.value?.id === deletedOrderId) {
       selectedOrder.value = null
     }
     closeDeleteDialog()
-    await Promise.all([loadProducts(), loadOrders()])
-    newOrdersStore.refresh()
-  } catch (err) {
-    errorMessage.value = err?.message || '訂單刪除失敗'
+    await refreshOrderPage()
   } finally {
     isDeletingOrder.value = false
   }
@@ -272,29 +276,35 @@ const closeBulkStatusDialog = () => {
   bulkStatusTarget.value = null
 }
 
+// 批次更新成功後立刻重整（活動多半會因此移到別的分頁）；重整期間 isBulkUpdatingStatus 維持 true，避免重複觸發。
 const confirmBulkStatusUpdate = async () => {
-  if (!bulkStatusTarget.value || !selectedActivityId.value) return
+  if (!bulkStatusTarget.value || !selectedActivityId.value || isBulkUpdatingStatus.value) return
 
   isBulkUpdatingStatus.value = true
   errorMessage.value = ''
   statusMessage.value = ''
 
   try {
-    const result = await bulkUpdateActivityOrderStatus(
-      selectedActivityId.value,
-      bulkStatusTarget.value.orderStatus,
-      bulkStatusTarget.value.sourceOrderStatus,
-    )
+    let result
+
+    try {
+      result = await bulkUpdateActivityOrderStatus(
+        selectedActivityId.value,
+        bulkStatusTarget.value.orderStatus,
+        bulkStatusTarget.value.sourceOrderStatus,
+      )
+    } catch (err) {
+      errorMessage.value = err?.message || '批次更新訂單狀態失敗'
+      return
+    }
+
     const updatedCount = Number(result?.updatedCount ?? 0)
     const label = getOrderStatusLabel(bulkStatusTarget.value.orderStatus)
     statusMessage.value = updatedCount > 0
       ? `已將 ${updatedCount} 筆訂單狀態改為「${label}」`
       : `沒有需要更新的訂單（皆已為「${label}」或已取消）`
     closeBulkStatusDialog()
-    await loadOrders()
-    newOrdersStore.refresh()
-  } catch (err) {
-    errorMessage.value = err?.message || '批次更新訂單狀態失敗'
+    await refreshOrderPage()
   } finally {
     isBulkUpdatingStatus.value = false
   }
@@ -303,7 +313,7 @@ const confirmBulkStatusUpdate = async () => {
 watch(selectedActivityId, async () => {
   page.value = 1
   selectedOrder.value = null
-  await Promise.all([loadProducts(), loadOrders()])
+  await loadOrders()
 })
 
 watch([searchKeyword, statusFilter], () => {
@@ -329,7 +339,6 @@ const applyRouteSelection = () => {
 
   if (activityIdParam && Number(selectedActivityId.value) !== activityIdParam) {
     selectedActivityId.value = activityIdParam
-    expandedActivityId.value = activityIdParam
   }
 
   if (orderIdParam) {
@@ -404,82 +413,51 @@ onUnmounted(() => {
         </MessageBlock>
 
         <div class="activity-list">
-          <div
+          <button
             v-for="activity in activities"
             :key="activity.activityId"
-            class="activity-group"
+            type="button"
+            class="activity-item"
+            :class="{
+              'activity-item--active': Number(activity.activityId) === Number(selectedActivityId),
+              'activity-item--readonly': isActivityReadOnly(activity),
+            }"
+            @click="selectActivity(activity.activityId)"
           >
-            <button
-              type="button"
-              class="activity-item"
-              :class="{
-                'activity-item--active': Number(activity.activityId) === Number(selectedActivityId),
-                'activity-item--readonly': isActivityReadOnly(activity),
-              }"
-              @click="selectActivity(activity.activityId)"
-            >
-              <img
-                class="activity-image"
-                :src="activity.imageUrl || '/cc-admin-mark.svg'"
-                alt=""
-              />
-              <span class="activity-name-row">
-                <span class="activity-name">{{ activity.activityName || `#${activity.activityId}` }}</span>
-                <span
-                  v-if="pendingOrderCount(activity.activityId) > 0"
-                  class="activity-pending-badge"
-                  :title="`還有 ${pendingOrderCount(activity.activityId)} 筆未處理訂單`"
-                  :aria-label="`還有 ${pendingOrderCount(activity.activityId)} 筆未處理訂單`"
-                >
-                  {{ pendingOrderCount(activity.activityId) }}
-                </span>
-                <svg
-                  class="activity-caret"
-                  :class="{ 'activity-caret--open': Number(activity.activityId) === Number(expandedActivityId) }"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path d="m6 9 6 6 6-6" />
-                </svg>
+            <img
+              class="activity-image"
+              :src="activity.imageUrl || '/cc-admin-mark.svg'"
+              alt=""
+            />
+            <span class="activity-name-row">
+              <span class="activity-name">{{ activity.activityName || `#${activity.activityId}` }}</span>
+              <span
+                v-if="pendingOrderCount(activity.activityId) > 0"
+                class="activity-pending-badge"
+                :title="`還有 ${pendingOrderCount(activity.activityId)} 筆未處理訂單`"
+                :aria-label="`還有 ${pendingOrderCount(activity.activityId)} 筆未處理訂單`"
+              >
+                {{ pendingOrderCount(activity.activityId) }}
               </span>
-              <span class="activity-badges">
-                <span
-                  class="activity-kind-badge"
-                  :class="{ 'activity-kind-badge--preorder': activity.isPreOrder }"
-                >
-                  {{ getActivityKindText(activity) }}
-                </span>
-                <span
-                  v-if="isActivityReadOnly(activity)"
-                  class="activity-status-badge activity-status-badge--readonly"
-                >
-                  {{ getActivityStatusBadge(activity) }}
-                </span>
+            </span>
+            <span class="activity-badges">
+              <span
+                class="activity-kind-badge"
+                :class="{ 'activity-kind-badge--preorder': activity.isPreOrder }"
+              >
+                {{ getActivityKindText(activity) }}
               </span>
-              <span class="activity-time">
-                {{ toDisplayDateTime(activity.activeStartTime) }} - {{ toDisplayDateTime(activity.activeEndTime) }}
+              <span
+                v-if="isActivityReadOnly(activity)"
+                class="activity-status-badge activity-status-badge--readonly"
+              >
+                {{ getActivityStatusBadge(activity) }}
               </span>
-            </button>
-
-            <div
-              v-if="Number(activity.activityId) === Number(expandedActivityId)"
-              class="product-summary"
-            >
-              <div class="panel-title panel-title--compact">
-                <h2>可訂購商品</h2>
-                <span>{{ products.length }}</span>
-              </div>
-              <div class="product-list">
-                <div v-for="product in products" :key="product.productId" class="product-row">
-                  <span>{{ product.name || `#${product.productId}` }}</span>
-                  <strong>{{ formatCurrency(product.price) }}</strong>
-                </div>
-                <MessageBlock v-if="products.length === 0" tone="empty">
-                  此活動沒有可訂購商品
-                </MessageBlock>
-              </div>
-            </div>
-          </div>
+            </span>
+            <span class="activity-time">
+              {{ toDisplayDateTime(activity.activeStartTime) }} - {{ toDisplayDateTime(activity.activeEndTime) }}
+            </span>
+          </button>
         </div>
       </aside>
 
@@ -774,7 +752,7 @@ onUnmounted(() => {
       :is-saving="isSavingOrder"
       :error-message="formErrorMessage"
       @close="closeOrderDialog"
-      @submit="handleSubmitOrder"
+      @submit="submitOrderForm"
       @add-item="addOrderItem"
       @remove-item="removeOrderItem"
       @delete="openDeleteEditingOrder"

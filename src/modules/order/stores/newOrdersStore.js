@@ -26,13 +26,21 @@ export const useNewOrdersStore = defineStore('newOrders', () => {
 
   let pollTimer = null
   let onVisibilityChange = null
+  // 輪詢、分頁切回、換頁、訂單動作後的重整可能重疊：只採用最後一次發出的回應，
+  // 避免較早發出（資料較舊）的回應晚到，把剛更新的數字蓋回去。
+  let refreshToken = 0
 
   const refresh = async () => {
+    const token = ++refreshToken
+
     try {
       const [total, newOrders] = await Promise.all([getNewOrderCount(), listNewOrders()])
+      if (token !== refreshToken) return
+
       count.value = total
       countsByActivity.value = groupCountByActivity(newOrders)
     } catch (error) {
+      if (token !== refreshToken) return
       // 靜默失敗：保留前一次數字，僅記錄以利除錯，不打斷後台操作
       console.error('[newOrders] 更新未處理訂單數失敗', error)
     }
@@ -58,6 +66,8 @@ export const useNewOrdersStore = defineStore('newOrders', () => {
       document.removeEventListener('visibilitychange', onVisibilityChange)
       onVisibilityChange = null
     }
+    // 讓還在途中的重整作廢，避免登出 / 卸載後晚到的回應又把數字填回來
+    refreshToken += 1
     count.value = 0
     countsByActivity.value = {}
   }

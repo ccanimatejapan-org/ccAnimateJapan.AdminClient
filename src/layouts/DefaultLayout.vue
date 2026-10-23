@@ -3,11 +3,15 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import AppButton from '@/shared/components/AppButton.vue'
 import NewOrdersMenu from '@/modules/order/components/NewOrdersMenu.vue'
+import { useSessionExpiryWatcher } from '@/shared/composables/useSessionExpiryWatcher'
 import { useAuthStore } from '@/shared/stores/authStore'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const adminName = computed(() => authStore.displayName)
+
+// 登入後頁面一直開著、分頁切走很久再切回來時，token 可能已過期：切回時主動檢查並導回登入頁
+useSessionExpiryWatcher()
 
 const logout = () => {
   authStore.signOut()

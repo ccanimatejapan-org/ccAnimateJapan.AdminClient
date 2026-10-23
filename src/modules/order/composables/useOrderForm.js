@@ -16,8 +16,8 @@ export const useOrderForm = ({
   selectedOrder,
   errorMessage,
   isLoadingDetail,
-  loadProducts,
-  loadOrders,
+  loadProducts = async () => {},
+  refreshAfterChange,
 }) => {
   const orderForm = ref(createEmptyOrderForm())
   const editingOrderId = ref(null)
@@ -70,7 +70,8 @@ export const useOrderForm = ({
     errorMessage.value = ''
 
     try {
-      const detail = await getOrderDetail(order.id)
+      // 商品選項只有編輯視窗要用，所以在打開視窗時才取（與訂單明細同時發出，視窗顯示時已備妥）。
+      const [detail] = await Promise.all([getOrderDetail(order.id), loadProducts()])
       selectedOrder.value = detail
       editingOrderId.value = detail.id
       orderForm.value = {
@@ -113,7 +114,11 @@ export const useOrderForm = ({
     orderForm.value.items.splice(index, 1)
   }
 
+  // 儲存成功後立刻重整（refreshAfterChange 由頁面傳入：活動列表、商品、訂單、明細與未處理計數）；
+  // 重整期間 isSavingOrder 維持 true，儲存按鈕不會被重複觸發。
   const submitOrderForm = async () => {
+    if (isSavingOrder.value) return
+
     const validationError = validateOrderForm(orderForm.value, {
       isEdit: Boolean(editingOrderId.value),
       activityId: selectedActivityId.value,
@@ -127,15 +132,20 @@ export const useOrderForm = ({
     formErrorMessage.value = ''
 
     try {
-      const savedOrder = editingOrderId.value
-        ? await updateOrder(editingOrderId.value, buildUpdateOrderPayload(orderForm.value, selectedActivityId.value))
-        : await createOrder(buildCreateOrderPayload(orderForm.value, selectedActivityId.value))
+      let savedOrder
+
+      try {
+        savedOrder = editingOrderId.value
+          ? await updateOrder(editingOrderId.value, buildUpdateOrderPayload(orderForm.value, selectedActivityId.value))
+          : await createOrder(buildCreateOrderPayload(orderForm.value, selectedActivityId.value))
+      } catch (err) {
+        formErrorMessage.value = err?.message || '訂單儲存失敗'
+        return
+      }
 
       closeOrderDialog()
-      await Promise.all([loadProducts(), loadOrders()])
       selectedOrder.value = savedOrder
-    } catch (err) {
-      formErrorMessage.value = err?.message || '訂單儲存失敗'
+      await refreshAfterChange()
     } finally {
       isSavingOrder.value = false
     }

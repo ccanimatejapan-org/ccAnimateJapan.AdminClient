@@ -21,16 +21,19 @@
 ```text
 src/
 ├─ app/                 # 啟動：main.js、App.vue、pinia.js
-├─ router/index.js      # 組裝各模組 routes + 全域登入守衛（含 legacy #/ 與 /activity 導頁）
-├─ layouts/             # DefaultLayout.vue（頁首/登出/包住 router-view）
+├─ router/index.js      # 組裝各模組 routes + 全域登入守衛（含 JWT 過期檢查、legacy #/ 與 /activity 導頁）
+├─ layouts/             # DefaultLayout.vue（頁首/登出/包住 router-view；登入後掛載登入過期監聽）
+├─ assets/              # 隨程式碼打包的靜態資源：logo/brand-logo.jpg（瀏覽器分頁 favicon，見下方「靜態資源」）
 ├─ styles/              # 全域 SCSS：variables.scss(tokens)、reset.scss、index.scss
 ├─ shared/              # 平台層（不依賴 modules/）
 │  ├─ api/              # httpClient.js(axios)、apiResponse.js
 │  ├─ components/       # 全站共用 UI（AppButton、FormField、PageShell、CustomSelect、ProductTable…）
 │  ├─ composables/      # useTableSort、useTablePagination、useNoteDialog、useDialogScrollLock、
-│  │                    #   useConfirmDialog、useImageUpload、useMultiImageUpload、useLeaveGuard
-│  ├─ stores/           # uiStore(Pinia,loading)、authStore(Pinia)、authSession.js(token helper)
-│  ├─ utils/            # format、html、tableSort、validation、formData、download、clipboard、queryString
+│  │                    #   useConfirmDialog、useImageUpload、useMultiImageUpload、useLeaveGuard、
+│  │                    #   useSessionExpiryWatcher
+│  ├─ stores/           # uiStore(Pinia,loading)、authStore(Pinia)、authSession.js(token helper，含 JWT 過期判斷)
+│  ├─ utils/            # format、html、tableSort、validation、formData、download、clipboard、queryString、
+│  │                    #   sessionWatcher
 │  └─ constants/        # routes.js（ROUTE_NAMES）、imageTypes.js（上傳圖片允許的格式，各圖片選擇器共用）、productLimits.js（商品 / 庫存手動輸入數值的上限，鏡像後端 `ProductValueLimits`）
 └─ modules/             # 功能模組
    ├─ dashboard/  auth/  activity/  activityProduct/
@@ -53,14 +56,14 @@ modules/{feature}/
 ## 平台層（shared/）規範
 
 ### `shared/api`
-- `httpClient.js`：唯一的 axios 實例。**攔截器自動帶 `Authorization: Bearer <token>`**、處理 401（清 token + 導回登入）、全域 loading 計數、120s 逾時轉 408。後端 envelope `{ status, data, message }` 由 `apiResponse.unwrapApiResponse()` 解開（**沿用「數字版」成功判斷 `Number(status)<400`**）；攔截器回傳 envelope，呼叫端取 `response?.data`。
+- `httpClient.js`：唯一的 axios 實例。**攔截器自動帶 `Authorization: Bearer <token>`**、處理 401（清 token、同步 `authStore`、導回登入，`handleUnauthorized` 含防重入；token 過期的偵測見下方「功能備註：登入過期」）、全域 loading 計數、120s 逾時轉 408。後端 envelope `{ status, data, message }` 由 `apiResponse.unwrapApiResponse()` 解開（**沿用「數字版」成功判斷 `Number(status)<400`**）；攔截器回傳 envelope，呼叫端取 `response?.data`。
 - 二進位下載（PDF 等）走 `apiBlob(path, { accept, expectContentType, fallbackFileName })` → `{ blob, fileName }`，搭配 `shared/utils/download.triggerBlobDownload`。
 - **api 模組不要自己帶 auth header**（攔截器負責）。登入等不需 token 的請求可帶 `{ skipAuthHandling: true }`。
 
 ### `shared/stores`（Pinia）
 - `uiStore`：全域 loading 遮罩（reference counter + 顯示延遲/最短顯示防抖）。由 httpClient 攔截器驅動。
-- `authStore`：反應式登入狀態（`isAuthenticated`/`displayName`/`signIn`/`signOut`），底層用 `authSession.js`。
-- `authSession.js`：localStorage token 純函式（`getAdminToken`/`setAdminToken`/`clearAdminToken`/`isAdminAuthenticated`/…）。httpClient 與 router 守衛直接用它（不進 Pinia context）。
+- `authStore`：反應式登入狀態（`isAuthenticated`/`displayName`/`signIn`/`signOut`/`syncFromStorage`），底層用 `authSession.js`。Pinia 元件外（httpClient、router 守衛）清掉 token 後，用 `syncAuthStoreFromStorage()` 把 store 的 `token` 同步回來。
+- `authSession.js`：localStorage token 純函式（`getAdminToken`/`setAdminToken`/`clearAdminToken`/`getValidAdminToken`/`isAdminAuthenticated`/`getTokenExpiry`/`isTokenExpired`/…）。httpClient 與 router 守衛直接用它（不進 Pinia context）。判斷「是否登入」用 `isAdminAuthenticated()`（含 JWT `exp` 檢查）；`getAdminToken()` 只回傳儲存的原始 token，不檢查是否過期。localStorage 讀寫一律包 try/catch（儲存空間被封鎖時視為沒有 token，不丟例外）。
 
 ### 樣式
 - 全域 reset / tokens 放 `src/styles/`（scss）。元件色彩/間距盡量用 `variables.scss` 的 token。
@@ -70,6 +73,7 @@ modules/{feature}/
 - route name 集中在 `shared/constants/routes.js` 的 `ROUTE_NAMES`；各模組 `routes.js` 只引用、不硬寫字串。
 - `router/index.js` 把各模組 `routes` 以 `...xxxRoutes` 組進 `DefaultLayout` children（登入頁為頂層）。**頁面採 lazy load**（`() => import(...)`）。
 - 新增頁面流程：補 `ROUTE_NAMES` → 在模組 `routes.js` 加 route → 在 `router/index.js` spread 進來。
+- 全域守衛用 `isAdminAuthenticated()` 判斷登入（含 JWT 過期檢查）：沒登入或 token 已過期，開任何頁面（含 `/`、`/dashboard`）都會導到 `/pages/login`。
 
 ## 資料流（一般頁面）
 
@@ -120,6 +124,27 @@ XxxPage.vue (orchestration)
 **訂單顯示（`order` 模組 `OrderListPage.vue` + `orderColumns.js`）**
 
 - 訂單「金額 / 訂單總額」一律顯示後端算好的 **`grandTotal`（= 商品小計 `total` + 補運費 `shippingFee`）**，前端不自行加總；明細另列「商品小計 / 補運費」拆解（補運費 > 0 時）。列表排序基準也用 `grandTotal`。詳見 [後端計算顯示值] 原則。
+
+## 功能備註：登入過期（JWT exp）
+
+- 後台登入用 JWT（存 localStorage，有效 120 分鐘，無續期）。過去路由守衛只檢查「token 存在」，儀表板又不一定會打 API 而等不到 401，所以關掉頁面隔幾天再開，畫面會停在首頁。現在 `authSession.js` 會解析 JWT payload 的 `exp`（`getTokenExpiry`，base64url + UTF-8），`isTokenExpired(token, { now, leewayMs })` 判斷是否過期。
+- **過期策略**：距離 `exp` 不到 10 秒（`TOKEN_EXPIRY_LEEWAY_MS`）就視為已過期（避免請求送出途中才失效）；**格式錯誤的 token、沒有 `exp`、`exp` 不是數字，一律視為已過期**（後端簽發的 token 一定帶 `exp`，讀不出來就不是有效憑證，直接重新登入）。
+- `isAdminAuthenticated()` / `getValidAdminToken()`：有 token 且未過期才算登入；過期或無效時**清除 token（含舊 `adminSession` key 的遷移）並視為未登入**。因此 router 守衛與根路徑 redirect 在重新開啟頁面時，過期的登入都會導到登入頁。
+- **頁面保持開著、分頁被切走很久再切回來**：沒有 API 請求就不會有 401，所以 `DefaultLayout`（只有登入後才掛載）呼叫 `shared/composables/useSessionExpiryWatcher`，在 `visibilitychange`（變成可見）與 `window` 的 `focus` 時重新檢查（純函式 `shared/utils/sessionWatcher.js`，元件卸載時移除監聽）；發現失效就走跟 401 相同的 `httpClient.handleUnauthorized`（清 token、同步 `authStore`、導回登入頁，含防重入）。目前不設定時器，頁面持續開著且沒切走時，仍由下一個 API 的 401 處理。
+- 注意：多數 composable 開頭的 `if (!getAdminToken())` 只是「有沒有 token」的前置檢查，不含過期判斷；過期時請求會以 401 收場並走上述導頁。
+
+## 功能備註：訂單管理頁（`order` 模組）
+
+- 左側活動列表只列活動（名稱、類型、狀態、未處理筆數徽章），**不再有「可訂購商品」摘要區塊**。頁面載入與切換活動時**不再取商品清單**：`products`（`/api/orders/activities/{id}/products`）只給「編輯訂單」視窗的商品下拉選單使用，改由 `useOrderForm.openEditOrder` 在打開視窗時才呼叫 `useOrders.loadProducts()`（與訂單明細同時發出，視窗顯示時已備妥）。
+- **活動分頁（尚未結單 / 已結單 / 預購已完成 / 商品已入庫 / 已完成）由後端依「該活動所有非取消訂單的最低訂單狀態」歸類**（見後端 `OrderActivityTab`），所以訂單狀態一改，活動可能就要換分頁。
+- **狀態變更後立即重整**：編輯訂單儲存、批次改狀態（`一鍵改為…`）、刪除訂單、寄送確認信（後端會把狀態改成「已寄送訂單確認信」，且先改狀態再寄信，所以成功或失敗都重整）完成後，頁面呼叫 `refreshOrderPage`：`useOrders.refreshAfterOrderChange()`（重新取得活動列表、目前活動的訂單、開著的訂單明細）加上 `newOrdersStore.refresh()`（頁首鈴鐺與活動徽章的未處理數）。重整會**停留在目前分頁 / 活動 / 搜尋條件 / 頁碼**（活動列表以 `preserveSelection` 載入，純函式 `utils/orderActivitySelection.js`）；只有目前活動已不屬於這個分頁（例如批次改成「預購已完成」後移到下一個分頁）時，才退回列表第一個活動並回到第 1 頁。
+- **競態**：`useOrders` 的活動 / 商品 / 訂單 / 明細載入、`newOrdersStore.refresh` 都用 request token（寫法同 `ReportsPage`），只採用最後一次發出的回應，舊回應晚到不會蓋掉新資料。儲存 / 刪除 / 批次 / 寄信的 in-flight 旗標（`isSavingOrder`、`isDeletingOrder`、`isBulkUpdatingStatus`、`sendingConfirmationOrderId`）在重整完成前都維持 true，防止重複送出。
+
+## 靜態資源（assets / public）與 favicon
+
+- `src/assets/logo/brand-logo.jpg`：品牌 logo（與 WebClient `src/assets/logo/brand-logo.jpg` 同一張）。`index.html` 以 `<link rel="icon" type="image/jpeg" href="/src/assets/logo/brand-logo.jpg" />` 當瀏覽器分頁圖示，Vite build 時會處理成帶 hash 的資源。
+- `public/cc-admin-mark.svg`：頁首品牌標記與活動 / 顧客圖片的預設圖，以絕對路徑 `/cc-admin-mark.svg` 引用，與 favicon 無關。
+- `assets/` 放隨程式碼打包的靜態檔；API 回傳的圖片 URL 與使用者上傳檔不放這裡。
 
 ## 功能備註：圖片上傳格式
 
