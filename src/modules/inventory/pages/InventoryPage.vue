@@ -64,7 +64,7 @@ const errorMessage = ref('')
 const statusMessage = ref('')
 const searchFilters = reactive(createEmptyProductFilters())
 
-const inventoryRuleText = '庫存數量與庫存狀態皆依庫存異動資料回傳；訂購數量為有效訂單件數減出貨。'
+const inventoryRuleText = '庫存數量與庫存狀態皆依庫存異動資料回傳；訂購數量為有效訂單件數減出貨。現貨商品庫存為 0 也會顯示，可直接進貨。'
 
 const {
   products,
