@@ -170,6 +170,7 @@ const {
   isOrderDialogOpen,
   formErrorMessage,
   isSavingOrder,
+  isItemsLocked,
   formProductOptions,
   openEditOrder,
   closeOrderDialog,
@@ -764,6 +765,7 @@ onUnmounted(() => {
       :payment-status-options="paymentStatusOptions"
       :shipping-payment-status-options="SHIPPING_PAYMENT_STATUS_OPTIONS"
       :is-saving="isSavingOrder"
+      :items-locked="isItemsLocked"
       :error-message="formErrorMessage"
       @close="closeOrderDialog"
       @submit="submitOrderForm"

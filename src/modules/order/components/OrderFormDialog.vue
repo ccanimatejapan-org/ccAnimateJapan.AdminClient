@@ -39,6 +39,11 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  // 預購已完成（含）之後的訂單：商品、數量、商品備註唯讀（後端也會擋）。
+  itemsLocked: {
+    type: Boolean,
+    default: false,
+  },
   errorMessage: {
     type: String,
     default: '',
@@ -221,8 +226,14 @@ const getShippingPaymentStatusLabel = () =>
         <section class="order-items-section">
           <div class="order-items-heading">
             <h3>商品</h3>
-            <AppButton type="button" pill @click="$emit('add-item')">新增商品</AppButton>
+            <AppButton type="button" pill :disabled="props.itemsLocked" @click="$emit('add-item')">
+              新增商品
+            </AppButton>
           </div>
+
+          <p v-if="props.itemsLocked" class="order-items-locked-note">
+            訂單已進入「預購已完成」之後的階段，商品與數量不可再修改。如需修改，請先把訂單狀態調回「顧客已付款」並儲存。
+          </p>
 
           <div class="order-items">
             <div v-for="(item, index) in props.form.items" :key="index" class="order-item-row">
@@ -231,6 +242,7 @@ const getShippingPaymentStatusLabel = () =>
                 <CustomSelect
                   tone="orders"
                   :label="getProductLabel(item)"
+                  :disabled="props.itemsLocked"
                   :open="openSelectKey === `product-${index}`"
                   @toggle="toggleSelect(`product-${index}`)"
                 >
@@ -251,18 +263,18 @@ const getShippingPaymentStatusLabel = () =>
 
               <label class="order-form-field order-form-field--item-info">
                 <span>商品備註 / 關鍵字</span>
-                <input v-model="item.info" :maxlength="ORDER_ITEM_INFO_MAX_LENGTH" />
+                <input v-model="item.info" :maxlength="ORDER_ITEM_INFO_MAX_LENGTH" :disabled="props.itemsLocked" />
               </label>
 
               <label class="order-form-field order-form-field--quantity">
                 <span>數量</span>
-                <input v-model.number="item.amount" min="1" required type="number" />
+                <input v-model.number="item.amount" min="1" required type="number" :disabled="props.itemsLocked" />
               </label>
 
               <button
                 class="remove-item-button"
                 type="button"
-                :disabled="props.form.items.length <= 1"
+                :disabled="props.itemsLocked || props.form.items.length <= 1"
                 @click="$emit('remove-item', index)"
               >
                 刪除
@@ -411,14 +423,18 @@ const getShippingPaymentStatusLabel = () =>
   padding-top: 16px;
 }
 
-.order-form-grid input.readonly-input {
+/* 停用 / 唯讀的控制項統一外觀：淡米色底、灰褐字、禁止游標。
+   全域 reset 把 button:disabled 設成 wait（給「處理中」用），這裡的停用是「不能操作」，所以要蓋成 not-allowed。 */
+.order-form-grid input.readonly-input,
+.order-form-grid input:disabled,
+.order-form-grid :deep(.custom-select-trigger:disabled),
+.order-items-heading :deep(.app-button:disabled),
+.remove-item-button:disabled {
+  border-color: #eaded2;
   background: #f6f1ea;
   color: #6b5f54;
   cursor: not-allowed;
-}
-
-.shipping-topup-section :deep(.custom-select-trigger:disabled) {
-  cursor: not-allowed;
+  opacity: 1;
 }
 
 .order-items-section {
@@ -434,6 +450,17 @@ const getShippingPaymentStatusLabel = () =>
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.order-items-locked-note {
+  margin: 0;
+  border: 1px solid #ecd9bd;
+  border-radius: 10px;
+  background: #fff7e8;
+  color: #8a5b24;
+  padding: 10px 12px;
+  font-size: 0.86rem;
+  line-height: 1.5;
 }
 
 .order-items-heading h3 {
@@ -480,10 +507,6 @@ const getShippingPaymentStatusLabel = () =>
   color: #374151;
 }
 
-.remove-item-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
 
 .dialog-actions {
   display: flex;
