@@ -169,6 +169,6 @@ XxxPage.vue (orchestration)
 ## 功能備註：庫存顯示
 
 - 庫存頁由 `inventory` 模組透過 `GET /api/product-stock-transactions/inventory-products` 一次取得包含 `activityId`、`activityName`、`isPreOrder`、庫存與有效訂購數量的扁平商品清單；切換畫面分類不重複呼叫 API。
-- API 商品完成數值正規化後，前端會排除「庫存數量 `amount` 與訂購數量 `orderedAmount` 皆為 0」的商品；頁籤筆數、搜尋結果、活動分組與空狀態皆以排除後的商品集合計算。
+- 可見規則（`inventoryProductGroups.js` 的 `filterInventoryProductsByInventoryVisibility`）：庫存 `amount` 或訂購量 `orderedAmount` 不是 0 的商品一律顯示；**現貨商品庫存 0 也顯示**（活動未結束時），才能在這裡進貨——商品編輯的數量欄是唯讀的，庫存只能從庫存管理異動，所以庫存 0 建立的現貨商品不能被藏起來；預購商品沒有訂購量就不顯示；已結束活動（`activityStatus = 4`，API 在庫存清單才帶這個欄位）的 0 / 0 商品也不顯示，避免清單雜亂。`activityStatus` 缺值（舊版後端）當作未結束。頁籤筆數、搜尋結果、活動分組與空狀態皆以過濾後的商品集合計算。API 列轉換在 `inventoryProductMapper.js`。
 - 畫面先以「現貨／預購」頁籤區分 `isPreOrder`，再於頁籤內依活動分成可收合區塊。名稱、商品類型與庫存狀態篩選及欄位排序皆在前端套用。
 - 庫存頁不使用商品層級分頁；資料切分與活動分組規則集中於 `modules/inventory/utils/inventoryProductGroups.js`，活動區塊 UI 位於 `modules/inventory/components/InventoryActivityGroup.vue`。

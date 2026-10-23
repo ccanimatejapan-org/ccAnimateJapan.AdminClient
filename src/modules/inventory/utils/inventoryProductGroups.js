@@ -7,12 +7,26 @@ export const UNCLASSIFIED_ACTIVITY_ID = null
 export const UNCLASSIFIED_ACTIVITY_NAME = '未分類活動'
 export const UNNAMED_ACTIVITY_NAME = '未命名活動'
 
+// 活動狀態「已結束」，對應後端 ActivityEnum.Ended = 4（見 AdminAPI docs/STATUS_CODES.md）。
+const ACTIVITY_STATUS_ENDED = 4
+
 const isPreOrderProduct = (product) => product?.isPreOrder === true
+const isEndedActivityProduct = (product) =>
+  Number(product?.activityStatus) === ACTIVITY_STATUS_ENDED
 const hasInventoryAmount = (product) =>
   product?.amount !== 0 || product?.orderedAmount !== 0
 
+// 庫存管理清單的可見規則：
+// - 庫存或訂購量不是 0 的商品一律顯示；
+// - 現貨商品庫存 0 也要顯示（活動還沒結束時），才能在這裡進貨——商品編輯的數量欄是唯讀的，庫存只能從庫存管理異動；
+// - 預購商品沒有訂購量就不顯示；已結束活動的 0 / 0 商品也不顯示，避免清單雜亂。
+// activityStatus 缺值（舊版後端）當作未結束，現貨 0 庫存照樣顯示。
+const isInventoryProductVisible = (product) =>
+  hasInventoryAmount(product) ||
+  (!isPreOrderProduct(product) && !isEndedActivityProduct(product))
+
 export const filterInventoryProductsByInventoryVisibility = (products = []) =>
-  products.filter(hasInventoryAmount)
+  products.filter(isInventoryProductVisible)
 
 export const filterInventoryProductsByMode = (products = [], mode) =>
   products.filter((product) =>

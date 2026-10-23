@@ -55,12 +55,12 @@ test('counts filtered products for both inventory modes', () => {
   })
 })
 
-test('hides products whose amount and orderedAmount are both zero', () => {
+test('hides pre-order products whose amount and orderedAmount are both zero', () => {
   const products = [
-    { id: 1, amount: 0, orderedAmount: 0 },
-    { id: 2, amount: 2, orderedAmount: 0 },
-    { id: 3, amount: -3, orderedAmount: 0 },
-    { id: 4, amount: 0, orderedAmount: 7 },
+    { id: 1, isPreOrder: true, amount: 0, orderedAmount: 0 },
+    { id: 2, isPreOrder: true, amount: 2, orderedAmount: 0 },
+    { id: 3, isPreOrder: true, amount: -3, orderedAmount: 0 },
+    { id: 4, isPreOrder: true, amount: 0, orderedAmount: 7 },
   ]
 
   assert.deepEqual(
@@ -69,11 +69,52 @@ test('hides products whose amount and orderedAmount are both zero', () => {
   )
 })
 
+// 現貨商品庫存 0 建立後，必須能在庫存管理看到，才能進貨（商品編輯裡的數量欄是唯讀的，庫存只能從這裡異動）。
+test('keeps ready-stock products with zero stock so they can be stocked in', () => {
+  const products = [
+    { id: 1, isPreOrder: false, amount: 0, orderedAmount: 0, activityStatus: 3 },
+    { id: 2, isPreOrder: false, amount: 0, orderedAmount: 0, activityStatus: 0 },
+    { id: 3, amount: 0, orderedAmount: 0 },
+    { id: 4, isPreOrder: null, amount: 0, orderedAmount: 0, activityStatus: null },
+  ]
+
+  assert.deepEqual(
+    filterInventoryProductsByInventoryVisibility(products).map((product) => product.id),
+    [1, 2, 3, 4],
+  )
+})
+
+test('hides zero-stock ready-stock products only once their activity has ended (status 4)', () => {
+  const products = [
+    { id: 1, isPreOrder: false, amount: 0, orderedAmount: 0, activityStatus: 4 },
+    { id: 2, isPreOrder: false, amount: 0, orderedAmount: 0, activityStatus: '4' },
+    { id: 3, isPreOrder: false, amount: 0, orderedAmount: 0, activityStatus: 3 },
+  ]
+
+  assert.deepEqual(
+    filterInventoryProductsByInventoryVisibility(products).map((product) => product.id),
+    [3],
+  )
+})
+
+test('keeps products of an ended activity that still have stock or ordered quantity', () => {
+  const products = [
+    { id: 1, isPreOrder: false, amount: 5, orderedAmount: 0, activityStatus: 4 },
+    { id: 2, isPreOrder: false, amount: 0, orderedAmount: 3, activityStatus: 4 },
+    { id: 3, isPreOrder: true, amount: 0, orderedAmount: 3, activityStatus: 4 },
+  ]
+
+  assert.deepEqual(
+    filterInventoryProductsByInventoryVisibility(products).map((product) => product.id),
+    [1, 2, 3],
+  )
+})
+
 test('keeps products with either amount or orderedAmount non-zero, including negative values', () => {
   const products = [
-    { id: 1, amount: 0, orderedAmount: -2 },
-    { id: 2, amount: 5, orderedAmount: 0 },
-    { id: 3, amount: 0, orderedAmount: 0 },
+    { id: 1, isPreOrder: true, amount: 0, orderedAmount: -2 },
+    { id: 2, isPreOrder: true, amount: 5, orderedAmount: 0 },
+    { id: 3, isPreOrder: true, amount: 0, orderedAmount: 0 },
   ]
 
   assert.deepEqual(
@@ -84,7 +125,7 @@ test('keeps products with either amount or orderedAmount non-zero, including neg
 
 test('counts only visible products for ready and pre-order modes', () => {
   const products = [
-    { id: 1, isPreOrder: false, amount: 0, orderedAmount: 0 },
+    { id: 1, isPreOrder: false, amount: 0, orderedAmount: 0, activityStatus: 4 },
     { id: 2, isPreOrder: false, amount: 0, orderedAmount: 10 },
     { id: 3, isPreOrder: true, amount: -4, orderedAmount: 0 },
     { id: 4, isPreOrder: true, amount: 0, orderedAmount: 0 },
@@ -99,7 +140,7 @@ test('counts only visible products for ready and pre-order modes', () => {
 
 test('keeps only visible products in activity groups', () => {
   const products = [
-    { id: 'zero', activityId: 10, activityName: '活動 A', amount: 0, orderedAmount: 0 },
+    { id: 'zero', activityId: 10, activityName: '活動 A', isPreOrder: true, amount: 0, orderedAmount: 0 },
     { id: 'non-zero', activityId: 10, activityName: '活動 A', amount: 1, orderedAmount: 0 },
     { id: 'negative', activityId: 10, activityName: '活動 A', amount: -1, orderedAmount: 2 },
   ]
@@ -117,8 +158,8 @@ test('keeps only visible products in activity groups', () => {
 
 test('drops activity groups that become empty after visibility filtering', () => {
   const products = [
-    { id: 1, activityId: 10, amount: 0, orderedAmount: 0 },
-    { id: 2, activityId: 10, amount: 0, orderedAmount: 0 },
+    { id: 1, activityId: 10, isPreOrder: true, amount: 0, orderedAmount: 0 },
+    { id: 2, activityId: 10, isPreOrder: true, amount: 0, orderedAmount: 0 },
   ]
   const visibleProducts = filterInventoryProductsByInventoryVisibility(products)
 
@@ -203,8 +244,8 @@ test('does not mutate the input array or product objects', () => {
 })
 
 test('does not mutate the input array passed to visibility filtering', () => {
-  const firstProduct = { id: 1, amount: 0, orderedAmount: 0 }
-  const secondProduct = { id: 2, amount: 1, orderedAmount: 0 }
+  const firstProduct = { id: 1, isPreOrder: true, amount: 0, orderedAmount: 0 }
+  const secondProduct = { id: 2, isPreOrder: true, amount: 1, orderedAmount: 0 }
   const products = [firstProduct, secondProduct]
 
   const visibleProducts = filterInventoryProductsByInventoryVisibility(products)
