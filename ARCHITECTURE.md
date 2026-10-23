@@ -12,7 +12,8 @@
 - 開團 / 運費 / 補運費怎麼運作：[`../ccAnimateJapan.AdminAPI/docs/GROUP_BUY.md`](../ccAnimateJapan.AdminAPI/docs/GROUP_BUY.md)
 - 本 repo 的狀態鏡像檔：
   - `src/modules/activity/utils/activityMapper.js`（活動狀態 `ActivityEnum`、可讀狀態 `activityStatusDisplayOptions`、可寫狀態 `activityStatusOptions`、運費模式 `ShippingMode`、分攤規則 `ShippingShareRule`、開團狀態 `GroupBuyStatus` + 中文標籤）
-  - `src/modules/order/utils/orderStatuses.js`（訂單 / 付款 / 物流 / 訂單商品 / 補運費付款 各狀態）
+  - `src/modules/order/utils/orderStatuses.js`（訂單 / 付款 / 物流 / 訂單商品 / 補運費付款 各狀態；另含由狀態推出的規則 `isOrderItemsLocked`：訂單狀態 ≥ 4（預購已完成）之後不可再改訂單商品，鏡像後端 `OrderItemRules.AreItemsLocked`，**改後端閾值要同步改這裡**）
+  - `src/modules/inventory/utils/inventoryProductGroups.js`（行內常數 `ACTIVITY_STATUS_ENDED = 4`，對應後端 `ActivityEnum.Ended`；庫存清單用它判斷活動是否已結束，已結束活動的 0 / 0 商品不顯示）
   - `src/modules/order/utils/activityOrderStatus.js`（可下單 / 唯讀活動狀態；目前只有 `Started (3)` 可新建訂單，legacy `Preparing (1)` / `PreparationEnded (2)` 僅可讀）
   - `src/modules/wishPool/utils/wishPoolDecisions.js`（許願池回覆 `Pending` / `Opened` / `NotOpened`，與活動 `groupBuyStatus` 分開）
 
@@ -92,7 +93,12 @@ XxxPage.vue (orchestration)
 
 ## 跨模組相依
 - `shared/` **不可** import `modules/`。
-- 模組之間原則上不互相 import；但本專案領域天然巢狀（活動 ⊃ 商品 ⊃ 訂單 ⊃ 庫存、報表跨多域），少數**領域相依**是允許的，例如 `inventory` 取用 `order`/`activityProduct` 的 api、`report` 取用 `activity` 的 mapper、`customer` 取用 `order` 的訂單狀態標籤。新增此類相依前先想清楚方向，避免循環。
+- 模組之間原則上不互相 import；但本專案領域天然巢狀（活動 ⊃ 商品 ⊃ 訂單 ⊃ 庫存、報表跨多域），少數**領域相依**是允許的。目前實際存在的（皆以 `@/modules/...` import，可用 Grep 核對）：
+  - `inventory → activityProduct`：api（`activityProductApi`）與 utils（`productMapper`、`productFilters`、`productPricing`、`productTableColumns`）；`inventory` 目前沒有 import `order`。
+  - `order → activity`：utils（`activityMapper`，含活動狀態 `ActivityEnum`）。
+  - `report → activity`（utils：`activityMapper`）與 `report → order`（utils：`orderStatuses`）。
+  - `customer → order`（utils：`orderStatuses`，訂單狀態標籤）、`dashboard → order`（`stores/newOrdersStore`）、`activityProduct → activity`（`activityApi`）、`activity → animateType`（`animateTypeApi`）。
+  新增此類相依前先想清楚方向，避免循環；上面清單與實際不符時請一併更新。
 
 ## 新增功能放哪裡
 - 新 API：在該模組 `api/xxxApi.js` 加函式（呼叫 httpClient），endpoint 字串只出現在 api 檔。
@@ -138,6 +144,14 @@ XxxPage.vue (orchestration)
 - 左側活動列表只列活動（名稱、類型、狀態、未處理筆數徽章），**不再有「可訂購商品」摘要區塊**。頁面載入與切換活動時**不再取商品清單**：`products`（`/api/orders/activities/{id}/products`）只給「編輯訂單」視窗的商品下拉選單使用，改由 `useOrderForm.openEditOrder` 在打開視窗時才呼叫 `useOrders.loadProducts()`（與訂單明細同時發出，視窗顯示時已備妥）。
 - **活動分頁（尚未結單 / 已結單 / 預購已完成 / 商品已入庫 / 已完成）由後端依「該活動所有非取消訂單的最低訂單狀態」歸類**（見後端 `OrderActivityTab`），所以訂單狀態一改，活動可能就要換分頁。
 - **狀態變更後立即重整**：編輯訂單儲存、批次改狀態（`一鍵改為…`）、刪除訂單、寄送確認信（後端會把狀態改成「已寄送訂單確認信」，且先改狀態再寄信，所以成功或失敗都重整）完成後，頁面呼叫 `refreshOrderPage`：`useOrders.refreshAfterOrderChange()`（重新取得活動列表、目前活動的訂單、開著的訂單明細）加上 `newOrdersStore.refresh()`（頁首鈴鐺與活動徽章的未處理數）。重整會**停留在目前分頁 / 活動 / 搜尋條件 / 頁碼**（活動列表以 `preserveSelection` 載入，純函式 `utils/orderActivitySelection.js`）；只有目前活動已不屬於這個分頁（例如批次改成「預購已完成」後移到下一個分頁）時，才退回列表第一個活動並回到第 1 頁。
+- **訂單編號顯示**：訂單管理頁的**列表第一欄（欄位名稱「訂單編號」）、右側明細標題、刪除確認視窗**顯示顧客看到的訂單編號（`orderNo`，如 `CJ202610230003`），沒有編號的訂單（後台自建、較早的）退回內部 id（`#265`），統一走 `utils/orderDisplay.js` 的 `formatOrderNumber`。該欄排序仍用內部 id。列表 API（`OrderResponse`）與明細 API 都帶 `orderNo`。
+  - **刻意保留內部 id 的地方**：明細標題上方的小字 `ORDER #id`（讓管理員仍看得到內部 id；有 `orderNo` 的訂單會同時看到兩種號碼，這是刻意的）。
+  - **目前仍顯示內部 id 的地方**：寄確認信成功後的狀態訊息（`useOrderRowActions.js`，`訂單 #id 確認信已寄送…`，尚未改用 `formatOrderNumber`）；顧客管理的顧客詳情（`CustomerDetailDialog.vue`）與庫存進貨視窗（`ProductStockTransactionDialog.vue`）的訂單清單——後兩者是因為後端 `CustomerOrderResponse` 與庫存用的 `ShippableOrderResponse` 沒有 `orderNo` 欄位，前端沒有資料可顯示；要改需先讓後端回傳。
+- **訂單明細欄位**：右側明細標題是訂單編號，下面的 `detail-grid` 一列三欄（手機寬度 ≤ 620px 改單欄）：訂購人 / Email / 帳號後五碼；配送方式 / 收件電話（`recipientPhone`）/ 收件地址（`address`）；訂單狀態 / 付款狀態 / 建立時間；有補運費時另起一列顯示「自行補運費」（`detail-grid__wide`）。收件電話與地址是顧客下單當下的快照，由後端 `GET /api/orders/{id}` 回傳，沒有值（後台自建、較早的訂單、面交無地址）顯示 `-`。
+- **編輯 / 新增訂單表單**（`OrderFormDialog`、`utils/orderForm.js`）：「帳號後五碼」為**選填**（前後端都不擋，留空後端存 `null`）；商品備註 / 規格長度上限用 `orderForm.js` 匯出的 `ORDER_ITEM_INFO_MAX_LENGTH`（**80**）。三處（輸入框 `maxlength`、載入編輯表單 `createOrderItemFromDetail`、組 payload `buildBaseOrderPayload`）都走這個常數。
+  - **80 是前後端多處各自寫死的同一個數字，調整時要一起改**，否則編輯存檔會把顧客備註截斷：後端 AdminAPI `Application/Orders/OrderItemRules.MaxInfoLength`、WebAPI `Application/Cart/Handlers/AddCartItemHandler.MaxNoteLength`（顧客加入購物車的備註上限）、WebClient 的 `cart/stores/cartStore.js`、`cart/utils/cartMapper.js` 與 `product/components/ProductAddDialog.vue`（`maxlength="80"`）。
+- **預購已完成後不可再改商品**：編輯視窗開啟時，若訂單**已存的**狀態 ≥ 4（預購已完成、商品已入庫、已聯絡顧客出貨事項、訂單已完成、訂單已取消；純函式 `utils/orderStatuses.js` 的 `isOrderItemsLocked`，`useOrderForm` 的 `isItemsLocked`），商品下拉、商品備註、數量、「新增商品」與每列「刪除」全部停用並顯示說明；訂購人、Email、帳號後五碼、配送方式、訂單 / 付款狀態仍可改，補運費付款狀態在有補運費時仍可選（補運費金額欄本來就唯讀）。視窗內改狀態下拉不會立刻解鎖：要改商品必須先把狀態調回「顧客已付款」（≤ 3）並儲存，再重新開啟。後端有同樣的檢查（`OrderItemRules.AreItemsLocked`，商品不同回 `409`），所以前端只是提示、不是唯一防線；**前後端閾值是兩份獨立實作，改後端閾值要同步改前端 `isOrderItemsLocked`**（見上方「狀態碼 / 開團」的鏡像清單）。
+- **編輯視窗的停用樣式**：補運費金額與補運費狀態、被鎖定的商品列（商品下拉 / 備註 / 數量 / 刪除）與「新增商品」統一成淡米色底、灰褐字、`cursor: not-allowed`（商品列只剩一筆時「刪除」的停用也是這個外觀）；底部「刪除 / 取消 / 儲存」處理中的停用樣式不在內。全域 `reset.scss` 的 `button:disabled` 是 `cursor: wait`（給「處理中」用），所以這個覆寫只做在 `OrderFormDialog.vue`（見該檔 style 區塊的註解），不要改全域。
 - **競態**：`useOrders` 的活動 / 商品 / 訂單 / 明細載入、`newOrdersStore.refresh` 都用 request token（寫法同 `ReportsPage`），只採用最後一次發出的回應，舊回應晚到不會蓋掉新資料。儲存 / 刪除 / 批次 / 寄信的 in-flight 旗標（`isSavingOrder`、`isDeletingOrder`、`isBulkUpdatingStatus`、`sendingConfirmationOrderId`）在重整完成前都維持 true，防止重複送出。
 
 ## 靜態資源（assets / public）與 favicon
@@ -168,7 +182,7 @@ XxxPage.vue (orchestration)
 
 ## 功能備註：庫存顯示
 
-- 庫存頁由 `inventory` 模組透過 `GET /api/product-stock-transactions/inventory-products` 一次取得包含 `activityId`、`activityName`、`isPreOrder`、庫存與有效訂購數量的扁平商品清單；切換畫面分類不重複呼叫 API。
-- API 商品完成數值正規化後，前端會排除「庫存數量 `amount` 與訂購數量 `orderedAmount` 皆為 0」的商品；頁籤筆數、搜尋結果、活動分組與空狀態皆以排除後的商品集合計算。
+- 庫存頁由 `inventory` 模組透過 `GET /api/product-stock-transactions/inventory-products` 一次取得包含 `activityId`、`activityName`、`isPreOrder`、`activityStatus`（所屬活動狀態，**只有這支庫存清單端點會帶**）、庫存與有效訂購數量的扁平商品清單；切換畫面分類不重複呼叫 API。
+- 可見規則（`inventoryProductGroups.js` 的 `filterInventoryProductsByInventoryVisibility`）：庫存 `amount` 或訂購量 `orderedAmount` 不是 0 的商品一律顯示；**現貨商品庫存 0 也顯示**（活動未結束時），才能在這裡進貨——商品編輯的數量欄是唯讀的，庫存只能從庫存管理異動，所以庫存 0 建立的現貨商品不能被藏起來；預購商品庫存與訂購量皆為 0 時不顯示；已結束活動（`activityStatus = 4`，API 在庫存清單才帶這個欄位）的 0 / 0 商品也不顯示，避免清單雜亂。`activityStatus` 缺值（舊版後端）當作未結束。頁籤筆數、搜尋結果、活動分組與空狀態皆以過濾後的商品集合計算。API 列轉換在 `inventoryProductMapper.js`。
 - 畫面先以「現貨／預購」頁籤區分 `isPreOrder`，再於頁籤內依活動分成可收合區塊。名稱、商品類型與庫存狀態篩選及欄位排序皆在前端套用。
 - 庫存頁不使用商品層級分頁；資料切分與活動分組規則集中於 `modules/inventory/utils/inventoryProductGroups.js`，活動區塊 UI 位於 `modules/inventory/components/InventoryActivityGroup.vue`。

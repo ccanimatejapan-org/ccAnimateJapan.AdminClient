@@ -1,5 +1,6 @@
 export const createOrderColumns = () => [
-  { key: 'id', label: '訂單', sortable: true, getValue: (order) => Number(order.id || 0) },
+  // 欄位顯示訂單編號；排序仍用內部 id（編號依建立順序遞增，且沒有編號的舊訂單也能排）。
+  { key: 'id', label: '訂單編號', sortable: true, getValue: (order) => Number(order.id || 0) },
   { key: 'subscriberName', label: '訂購人', sortable: true, getValue: (order) => order.subscriberName || '' },
   { key: 'memberDisplayName', label: 'LINE 名稱', sortable: true, getValue: (order) => order.memberDisplayName || '' },
   { key: 'subscriberBank', label: '帳號後五碼', sortable: true, getValue: (order) => order.subscriberBank || '' },

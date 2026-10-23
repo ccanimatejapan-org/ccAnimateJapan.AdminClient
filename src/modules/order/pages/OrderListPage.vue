@@ -10,6 +10,7 @@ import { useOrderForm } from '@/modules/order/composables/useOrderForm'
 import { useOrderRowActions } from '@/modules/order/composables/useOrderRowActions'
 import { useNewOrdersStore } from '@/modules/order/stores/newOrdersStore'
 import { createOrderColumns } from '@/modules/order/utils/orderColumns'
+import { formatOrderNumber } from '@/modules/order/utils/orderDisplay'
 import {
   getActivityKindText,
   getActivityStatusBadge,
@@ -169,6 +170,7 @@ const {
   isOrderDialogOpen,
   formErrorMessage,
   isSavingOrder,
+  isItemsLocked,
   formProductOptions,
   openEditOrder,
   closeOrderDialog,
@@ -581,7 +583,7 @@ onUnmounted(() => {
                 :key="order.id"
                 :class="{ 'order-row--highlight': Number(order.id) === Number(highlightedOrderId) }"
               >
-                <td>#{{ order.id }}</td>
+                <td>{{ formatOrderNumber(order) }}</td>
                 <td>{{ order.subscriberName }}</td>
                 <td>{{ order.memberDisplayName || '—' }}</td>
                 <td>{{ order.subscriberBank }}</td>
@@ -649,7 +651,7 @@ onUnmounted(() => {
           <div class="orders-header">
             <div>
               <p class="section-eyebrow">Order #{{ selectedOrder.id }}</p>
-              <h2>{{ selectedOrder.subscriberName }}</h2>
+              <h2>{{ formatOrderNumber(selectedOrder) }}</h2>
             </div>
             <div class="detail-header-actions">
               <button
@@ -679,18 +681,31 @@ onUnmounted(() => {
             </div>
           </div>
 
+          <!-- 一列三欄：訂購人 / Email / 帳號後五碼；配送方式 / 收件電話 / 收件地址；訂單狀態 / 付款狀態 / 建立時間 -->
           <dl class="detail-grid">
             <div>
+              <dt>訂購人</dt>
+              <dd>{{ selectedOrder.subscriberName || '-' }}</dd>
+            </div>
+            <div>
               <dt>Email</dt>
-              <dd>{{ selectedOrder.subscriberEmail }}</dd>
+              <dd>{{ selectedOrder.subscriberEmail || '-' }}</dd>
             </div>
             <div>
               <dt>帳號後五碼</dt>
-              <dd>{{ selectedOrder.subscriberBank }}</dd>
+              <dd>{{ selectedOrder.subscriberBank || '-' }}</dd>
             </div>
             <div>
               <dt>配送方式</dt>
               <dd>{{ selectedOrder.deliveryType?.name || '-' }}</dd>
+            </div>
+            <div>
+              <dt>收件電話</dt>
+              <dd>{{ selectedOrder.recipientPhone || '-' }}</dd>
+            </div>
+            <div>
+              <dt>收件地址</dt>
+              <dd>{{ selectedOrder.address || '-' }}</dd>
             </div>
             <div>
               <dt>訂單狀態</dt>
@@ -700,13 +715,13 @@ onUnmounted(() => {
               <dt>付款狀態</dt>
               <dd>{{ getPaymentStatusLabel(selectedOrder.paymentStatus) }}</dd>
             </div>
-            <div v-if="selectedOrder.shippingFee > 0">
-              <dt>自行補運費</dt>
-              <dd>{{ getShippingPaymentStatusLabel(selectedOrder.shippingPaymentStatus) }}（{{ formatCurrency(selectedOrder.shippingFee) }}）</dd>
-            </div>
             <div>
               <dt>建立時間</dt>
               <dd>{{ toDisplayDateTime(selectedOrder.createdAt) }}</dd>
+            </div>
+            <div v-if="selectedOrder.shippingFee > 0" class="detail-grid__wide">
+              <dt>自行補運費</dt>
+              <dd>{{ getShippingPaymentStatusLabel(selectedOrder.shippingPaymentStatus) }}（{{ formatCurrency(selectedOrder.shippingFee) }}）</dd>
             </div>
           </dl>
 
@@ -750,6 +765,7 @@ onUnmounted(() => {
       :payment-status-options="paymentStatusOptions"
       :shipping-payment-status-options="SHIPPING_PAYMENT_STATUS_OPTIONS"
       :is-saving="isSavingOrder"
+      :items-locked="isItemsLocked"
       :error-message="formErrorMessage"
       @close="closeOrderDialog"
       @submit="submitOrderForm"

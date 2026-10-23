@@ -9,7 +9,7 @@ test('createOrderColumns returns the expected column keys, labels and sortable f
   assert.deepEqual(
     columns.map((column) => [column.key, column.label, column.sortable]),
     [
-      ['id', '訂單', true],
+      ['id', '訂單編號', true],
       ['subscriberName', '訂購人', true],
       ['memberDisplayName', 'LINE 名稱', true],
       ['subscriberBank', '帳號後五碼', true],

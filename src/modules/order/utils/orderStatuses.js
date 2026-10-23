@@ -49,6 +49,13 @@ export const getOrderProductStatusLabel = (value) => getStatusOptionLabel(ORDER_
 
 export const getShippingPaymentStatusLabel = (value) => getStatusOptionLabel(SHIPPING_PAYMENT_STATUS_OPTIONS, value)
 
+// 訂單進入「預購已完成」（4）之後（含入庫、出貨、完成、取消）就不能再改商品與數量；
+// 與後端 OrderItemRules.AreItemsLocked 一致，要改商品必須先把狀態調回 4 之前並存檔。
+const ORDER_ITEMS_LOCKED_FROM_STATUS = 4
+
+export const isOrderItemsLocked = (orderStatus) =>
+  Number(orderStatus) >= ORDER_ITEMS_LOCKED_FROM_STATUS
+
 export const isValidOrderStatus = (value) => isValidStatus(ORDER_STATUS_OPTIONS, value)
 export const isValidPaymentStatus = (value) => isValidStatus(PAYMENT_STATUS_OPTIONS, value)
 export const isValidShippingPaymentStatus = (value) => isValidStatus(SHIPPING_PAYMENT_STATUS_OPTIONS, value)

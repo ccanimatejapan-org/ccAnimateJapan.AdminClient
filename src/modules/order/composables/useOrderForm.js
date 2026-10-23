@@ -5,8 +5,10 @@ import {
   buildUpdateOrderPayload,
   createEmptyOrderForm,
   createEmptyOrderItem,
+  createOrderItemFromDetail,
   validateOrderForm,
 } from '@/modules/order/utils/orderForm'
+import { isOrderItemsLocked } from '@/modules/order/utils/orderStatuses'
 
 export const useOrderForm = ({
   selectedActivityId,
@@ -24,6 +26,9 @@ export const useOrderForm = ({
   const isOrderDialogOpen = ref(false)
   const formErrorMessage = ref('')
   const isSavingOrder = ref(false)
+  // 以「開啟編輯視窗時訂單已存的狀態」判斷：預購已完成（含）之後的訂單，商品與數量唯讀。
+  // 視窗內改狀態下拉不會立刻解鎖；要改商品需先調回較早的狀態並存檔，再重新開啟。
+  const isItemsLocked = ref(false)
 
   const formProductOptions = computed(() => {
     const optionsById = new Map(
@@ -57,6 +62,7 @@ export const useOrderForm = ({
     }
 
     editingOrderId.value = null
+    isItemsLocked.value = false
     selectedOrder.value = null
     orderForm.value = createEmptyOrderForm()
     orderForm.value.deliveryTypeId = deliveryTypes.value[0]?.id || ''
@@ -74,6 +80,7 @@ export const useOrderForm = ({
       const [detail] = await Promise.all([getOrderDetail(order.id), loadProducts()])
       selectedOrder.value = detail
       editingOrderId.value = detail.id
+      isItemsLocked.value = isOrderItemsLocked(detail.orderStatus)
       orderForm.value = {
         subscriberName: detail.subscriberName || '',
         subscriberEmail: detail.subscriberEmail || '',
@@ -83,11 +90,7 @@ export const useOrderForm = ({
         paymentStatus: detail.paymentStatus || 1,
         shippingFee: detail.shippingFee || 0,
         shippingPaymentStatus: detail.shippingPaymentStatus || 0,
-        items: (detail.items || []).map((item) => ({
-          productId: item.productId,
-          amount: item.amount,
-          info: String(item.info || '').slice(0, 10),
-        })),
+        items: (detail.items || []).map(createOrderItemFromDetail),
       }
       if (orderForm.value.items.length === 0) {
         orderForm.value.items = [createEmptyOrderItem()]
@@ -106,10 +109,12 @@ export const useOrderForm = ({
   }
 
   const addOrderItem = () => {
+    if (isItemsLocked.value) return
     orderForm.value.items.push(createEmptyOrderItem())
   }
 
   const removeOrderItem = (index) => {
+    if (isItemsLocked.value) return
     if (orderForm.value.items.length <= 1) return
     orderForm.value.items.splice(index, 1)
   }
@@ -157,6 +162,7 @@ export const useOrderForm = ({
     isOrderDialogOpen,
     formErrorMessage,
     isSavingOrder,
+    isItemsLocked,
     formProductOptions,
     openCreateOrder,
     openEditOrder,

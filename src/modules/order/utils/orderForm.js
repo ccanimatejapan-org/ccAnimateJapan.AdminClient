@@ -10,10 +10,24 @@ import {
 
 const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim())
 
+// 商品備註 / 規格長度上限：與顧客端加入購物車的備註上限（WebAPI AddCartItemHandler.MaxNoteLength = 80、
+// WebClient 的 cartStore / cartMapper / ProductAddDialog 也都是 80）以及後端 AdminAPI 的
+// OrderItemRules.MaxInfoLength 一致；比顧客端短的話，編輯訂單存檔會把備註截斷。調整時這幾處要一起改。
+export const ORDER_ITEM_INFO_MAX_LENGTH = 80
+
+const clampItemInfo = (value) => String(value || '').trim().slice(0, ORDER_ITEM_INFO_MAX_LENGTH)
+
 export const createEmptyOrderItem = () => ({
   productId: '',
   amount: 1,
   info: '',
+})
+
+// 訂單明細的一筆商品 → 編輯表單的一列。
+export const createOrderItemFromDetail = (item) => ({
+  productId: item.productId,
+  amount: item.amount,
+  info: clampItemInfo(item.info),
 })
 
 export const createEmptyOrderForm = () => ({
@@ -37,7 +51,7 @@ export const buildBaseOrderPayload = (form, activityId) => ({
   items: form.items.map((item) => ({
     productId: Number(item.productId),
     amount: Number(item.amount),
-    info: String(item.info || '').trim().slice(0, 10) || null,
+    info: clampItemInfo(item.info) || null,
   })),
 })
 
@@ -58,7 +72,6 @@ export const validateOrderForm = (form, { isEdit = false, activityId } = {}) => 
   if (!hasPositiveNumberValue(activityId)) missingFields.push('活動')
   if (isBlankValue(form.subscriberName)) missingFields.push('訂購人')
   if (isBlankValue(form.subscriberEmail)) missingFields.push('Email')
-  if (isBlankValue(form.subscriberBank)) missingFields.push('帳號後五碼')
   if (!hasPositiveNumberValue(form.deliveryTypeId)) missingFields.push('配送方式')
 
   if (isEdit) {

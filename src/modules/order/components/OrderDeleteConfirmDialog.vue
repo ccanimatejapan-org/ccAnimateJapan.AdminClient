@@ -1,6 +1,7 @@
 <script setup>
 import AppButton from '@/shared/components/AppButton.vue'
 import IconButton from '@/shared/components/IconButton.vue'
+import { formatOrderNumber } from '@/modules/order/utils/orderDisplay'
 
 defineProps({
   order: {
@@ -27,7 +28,7 @@ defineEmits(['close', 'confirm'])
       </div>
 
       <p class="delete-dialog-copy">
-        確定要刪除訂單 #{{ order?.id || '' }}？庫存會一併還原。
+        確定要刪除訂單 {{ formatOrderNumber(order) }}？庫存會一併還原。
       </p>
 
       <div class="dialog-actions">
